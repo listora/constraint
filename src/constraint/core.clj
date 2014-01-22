@@ -1,6 +1,13 @@
 (ns constraint.core)
 
-(defn foo
-  "I don't do a whole lot."
-  [x]
-  (println x "Hello, World!"))
+(defprotocol Validate
+  (validate [definition data]))
+
+(extend-protocol Validate
+  Class
+  (validate [definition data]
+    (if-not (instance? definition data)
+      [{:error    :invalid-type
+        :message  "data type does not match definition"
+        :expected definition
+        :found    (type data)}])))
