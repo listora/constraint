@@ -5,7 +5,8 @@
 
 (def messages
   {:invalid-type "data type does not match definition"
-   :no-valid-constraint "no valid constraint in union"})
+   :no-valid-constraint "no valid constraint in union"
+   :count-differs "number of elements in data does not match definition"})
 
 (deftype Union [constraints]
   Validate
@@ -33,4 +34,19 @@
       [{:error    :invalid-type
         :message  (messages :invalid-type)
         :expected nil
-        :found    (type data)}])))
+        :found    (type data)}]))
+  clojure.lang.IPersistentVector
+  (validate [definition data]
+    (cond
+     (not (sequential? data))
+     [{:error    :invalid-type
+       :message  (messages :invalid-type)
+       :expected clojure.lang.Sequential
+       :found    (type data)}]
+     (not= (count definition) (count data))
+     [{:error    :count-differs
+       :message  (messages :count-differs)
+       :expected (count definition)
+       :found    (count data)}]
+     :else
+     (seq (mapcat validate definition data)))))
