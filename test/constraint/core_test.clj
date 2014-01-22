@@ -13,4 +13,11 @@
            [{:error :invalid-type
              :message "data type does not match definition"
              :expected Integer
-             :found Double}]))))
+             :found Double}])))
+  (testing "nil"
+    (is (empty? (validate nil nil)))
+    (is (= (validate nil "foo")
+           [{:error :invalid-type
+             :message "data type does not match definition"
+             :expected nil
+             :found String}]))))
