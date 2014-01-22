@@ -42,4 +42,11 @@
                :expected clojure.lang.Sequential
                :found clojure.lang.PersistentArrayMap}])))
     (testing "item types"
-      (is (not (empty? (validate [String Number] ["foo" "10"])))))))
+      (is (not (empty? (validate [String Number] ["foo" "10"])))))
+    (testing "rest type"
+      (is (empty? (validate ['& String] ["foo" "bar" "baz"])))
+      (is (empty? (validate ['& String] [])))
+      (is (empty? (validate [Number '& String] [10 "foo" "bar"])))
+      (is (not (empty? (validate [Number '& String] []))))
+      (is (not (empty? (validate [Number '& String] ["foo"]))))
+      (is (not (empty? (validate [Number '& String] [10 "foo" 5])))))))
