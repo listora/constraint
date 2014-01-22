@@ -67,4 +67,27 @@
       (is (empty? (validate [Number '& String] [10 "foo" "bar"])))
       (is (not (empty? (validate [Number '& String] []))))
       (is (not (empty? (validate [Number '& String] ["foo"]))))
-      (is (not (empty? (validate [Number '& String] [10 "foo" 5])))))))
+      (is (not (empty? (validate [Number '& String] [10 "foo" 5]))))))
+
+  (testing "maps"
+    (testing "valid"
+      (is (empty? (validate {:foo String} {:foo "bar"})))
+      (is (empty? (validate {:foo String, :bar Number} {:foo "x" :bar 1}))))
+    (testing "keys"
+      (is (= (validate {:foo String} {:foo "bar" :baz "quz"})
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :expected {:foo String}
+               :found {:foo String :baz String}}])))
+    (testing "type"
+      (is (= (validate {:foo String} [:foo "bar"])
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :expected clojure.lang.IPersistentMap
+               :found clojure.lang.PersistentVector}])))
+    (testing "value types"
+      (is (= (validate {:foo String} {:foo 10})
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :expected String
+               :found Long}])))))

@@ -65,7 +65,22 @@
        :expected definition
        :found    (mapv type data)}]
      :else
-     (seq (mapcat validate definition data)))))
+     (seq (mapcat validate* definition data)))))
+
+(extend-type clojure.lang.IPersistentMap
+  Validate
+  (validate* [definition data]
+    (cond
+     (not (map? data))
+     [{:error    :invalid-type
+       :expected clojure.lang.IPersistentMap
+       :found    (type data)}]
+     (not= (set (keys definition)) (set (keys data)))
+     [{:error    :invalid-type
+       :expected definition
+       :found    (into {} (map (fn [[k v]] [k (type v)]) data))}]
+     :else
+     (seq (mapcat (fn [[k v]] (validate* v (data k))) definition)))))
 
 (defn- validate-literal [definition data]
   (if-not (= definition data)
