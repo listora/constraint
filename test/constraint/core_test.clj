@@ -15,17 +15,30 @@
                :message "data type does not match definition"
                :expected Integer
                :found Double}]))))
-  (testing "nil"
-    (is (empty? (validate nil nil)))
-    (is (= (validate nil "foo")
-           [{:error :invalid-type
-             :message "data type does not match definition"
-             :expected nil
-             :found String}])))
+  
+  (testing "values"
+    (testing "strings"
+      (is (empty? (validate "foo" "foo")))
+      (is (= (-> (validate "foo" "bar") first :error) :invalid-value)))
+    (testing "numbers"
+      (is (empty? (validate 5 5)))
+      (is (= (-> (validate 5 6) first :error) :invalid-value)))
+    (testing "keywords"
+      (is (empty? (validate :foo :foo)))
+      (is (= (-> (validate :foo :bar) first :error) :invalid-value)))
+    (testing "nil"
+      (is (empty? (validate nil nil)))
+      (is (= (validate nil "foo")
+             [{:error :invalid-value
+               :message "data value does not match definition"
+               :expected nil
+               :found "foo"}]))))
+  
   (testing "unions"
     (is (empty? (validate (U String nil) "foo")))
     (is (empty? (validate (U String nil) nil)))
     (is (not (empty? (validate (U String nil) 10)))))
+  
   (testing "vectors"
     (testing "valid"
       (is (empty? (validate [String Number] ["foo" 10]))))

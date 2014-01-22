@@ -5,6 +5,7 @@
 
 (def messages
   {:invalid-type "data type does not match definition"
+   :invalid-value "data value does not match definition"
    :no-valid-constraint "no valid constraint in union"})
 
 (defn validate [definition data]
@@ -33,12 +34,6 @@
     (if-not (instance? definition data)
       [(invalid-type definition data)])))
 
-(extend-type nil
-  Validate
-  (validate* [_ data]
-    (if-not (nil? data)
-      [(invalid-type nil data)])))
-
 (defn- split-vector [v]
   (let [[x [_ & y]] (split-with #(not= '& %) v)]
     (assert (= (count y) 1) "Only one item should be after & symbol")
@@ -63,3 +58,15 @@
        :found    (mapv type data)}]
      :else
      (seq (mapcat validate definition data)))))
+
+(defn- validate-literal [definition data]
+  (if-not (= definition data)
+    [{:error    :invalid-value
+      :expected definition
+      :found    data}]))
+
+(extend-protocol Validate
+  nil
+  (validate* [def data] (validate-literal def data))
+  Object
+  (validate* [def data] (validate-literal def data)))
