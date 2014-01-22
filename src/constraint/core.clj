@@ -22,25 +22,30 @@
 (defn U [& constraints]
   (Union. constraints))
 
+(defn- invalid-type [expected found]
+  {:error    :invalid-type
+   :expected expected
+   :found    (type found)})
+
+(extend-type Class
+  Validate
+  (validate* [definition data]
+    (if-not (instance? definition data)
+      [(invalid-type definition data)])))
+
+(extend-type nil
+  Validate
+  (validate* [_ data]
+    (if-not (nil? data)
+      [(invalid-type nil data)])))
+
 (defn- split-vector [v]
   (let [[x [_ & y]] (split-with #(not= '& %) v)]
     (assert (= (count y) 1) "Only one item should be after & symbol")
     [(vec x) (first y)]))
 
-(extend-protocol Validate
-  Class
-  (validate* [definition data]
-    (if-not (instance? definition data)
-      [{:error    :invalid-type
-        :expected definition
-        :found    (type data)}]))
-  nil
-  (validate* [_ data]
-    (if-not (nil? data)
-      [{:error    :invalid-type
-        :expected nil
-        :found    (type data)}]))
-  clojure.lang.IPersistentVector
+(extend-type clojure.lang.IPersistentVector
+  Validate
   (validate* [definition data]
     (cond
      (some #(= '& %) definition)
