@@ -23,6 +23,14 @@
 (defn U [& constraints]
   (Union. constraints))
 
+(deftype Intersection [constraints]
+  Validate
+  (validate* [_ data]
+    (mapcat #(validate % data) constraints)))
+
+(defn I [& constraints]
+  (Intersection. constraints))
+
 (defn- invalid-type [expected found]
   {:error    :invalid-type
    :expected expected

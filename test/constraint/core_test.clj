@@ -38,6 +38,11 @@
     (is (empty? (validate (U String nil) "foo")))
     (is (empty? (validate (U String nil) nil)))
     (is (not (empty? (validate (U String nil) 10)))))
+
+  (testing "intersections"
+    (is (empty? (validate (I Number Long) 10)))
+    (is (not (empty? (validate (I Number Long) 10.0))))
+    (is (not (empty? (validate (I Number Long) "10")))))
   
   (testing "vectors"
     (testing "valid"
