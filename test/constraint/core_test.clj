@@ -29,10 +29,10 @@
     (is (empty? (validate [String Number] ["foo" 10]))))
   (testing "collection size"
     (is (= (validate [String Number] ["foo"])
-           [{:error :count-differs
-             :message "number of elements in data does not match definition"
-             :expected 2
-             :found 1}])))
+           [{:error :invalid-type
+             :message "data type does not match definition"
+             :expected [String Number]
+             :found [String]}])))
   (testing "collection type"
     (is (= (validate [String Number] {"foo" 10})
            [{:error :invalid-type

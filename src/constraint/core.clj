@@ -5,8 +5,7 @@
 
 (def messages
   {:invalid-type "data type does not match definition"
-   :no-valid-constraint "no valid constraint in union"
-   :count-differs "number of elements in data does not match definition"})
+   :no-valid-constraint "no valid constraint in union"})
 
 (defn validate [definition data]
   (for [error (validate* definition data)]
@@ -44,8 +43,8 @@
        :expected clojure.lang.Sequential
        :found    (type data)}]
      (not= (count definition) (count data))
-     [{:error    :count-differs
-       :expected (count definition)
-       :found    (count data)}]
+     [{:error    :invalid-type
+       :expected definition
+       :found    (mapv type data)}]
      :else
      (seq (mapcat validate definition data)))))
