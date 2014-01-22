@@ -7,7 +7,8 @@
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
    :no-valid-constraint "no valid constraint in union"
-   :size-out-of-bounds "data size is out of bounds"})
+   :size-out-of-bounds "data size is out of bounds"
+   :pattern-not-matching "data does not match regular expression in definition"})
 
 (defn validate [definition data]
   (for [error (validate* definition data)]
@@ -98,6 +99,14 @@
        :found    (into {} (map (fn [[k v]] [k (type v)]) data))}]
      :else
      (seq (mapcat (fn [[k v]] (validate* v (data k))) definition)))))
+
+(extend-type java.util.regex.Pattern
+  Validate
+  (validate* [definition data]
+    (if (and (string? data) (not (re-matches definition data)))
+      [{:error   :pattern-not-matching
+        :pattern definition
+        :found   data}])))
 
 (defn- validate-literal [definition data]
   (if-not (= definition data)

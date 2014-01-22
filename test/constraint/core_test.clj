@@ -33,6 +33,17 @@
                :message "data value does not match definition"
                :expected nil
                :found "foo"}]))))
+
+  (testing "regexes"
+    (testing "matches"
+      (is (empty? (validate #"fo+" "foooo"))))
+    (testing "doesn't match"
+      (let [re #"fo+"]
+        (is (= (validate re "foa")
+               [{:error :pattern-not-matching
+                 :message "data does not match regular expression in definition"
+                 :pattern re
+                 :found "foa"}])))))
   
   (testing "unions"
     (is (empty? (validate (U String nil) "foo")))
