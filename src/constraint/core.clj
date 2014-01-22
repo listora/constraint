@@ -4,7 +4,20 @@
   (validate [definition data]))
 
 (def messages
-  {:invalid-type "data type does not match definition"})
+  {:invalid-type "data type does not match definition"
+   :no-valid-constraint "no valid constraint in union"})
+
+(deftype Union [constraints]
+  Validate
+  (validate [_ data]
+    (let [errors (map #(validate % data) constraints)]
+      (if-not (some empty? errors)
+        [{:error    :no-valid-constraint
+          :message  (messages :no-valid-constraint)
+          :failures (apply concat errors)}]))))
+
+(defn U [& constraints]
+  (Union. constraints))
 
 (extend-protocol Validate
   Class

@@ -20,4 +20,8 @@
            [{:error :invalid-type
              :message "data type does not match definition"
              :expected nil
-             :found String}]))))
+             :found String}])))
+  (testing "unions"
+    (is (empty? (validate (U String nil) "foo")))
+    (is (empty? (validate (U String nil) nil)))
+    (is (not (empty? (validate (U String nil) 10))))))
