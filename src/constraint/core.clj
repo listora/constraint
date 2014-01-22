@@ -6,7 +6,8 @@
 (def messages
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
-   :no-valid-constraint "no valid constraint in union"})
+   :no-valid-constraint "no valid constraint in union"
+   :size-out-of-bounds "data size is out of bounds"})
 
 (defn validate [definition data]
   (for [error (validate* definition data)]
@@ -41,6 +42,22 @@
   (validate* [definition data]
     (if-not (instance? definition data)
       [(invalid-type definition data)])))
+
+(extend-type clojure.lang.Fn
+  Validate
+  (validate* [func data] (func data)))
+
+(defn size
+  ([max]
+     (size 0 max))
+  ([min max]
+     (fn [data]
+       (if-let [n (try (count data) (catch Throwable _ nil))]
+         (if-not (<= min n max)
+           [{:error    :size-out-of-bounds
+             :minimum  min
+             :maximum  max
+             :found    n}])))))
 
 (defn- split-vector [v]
   (let [[x [_ & y]] (split-with #(not= '& %) v)]

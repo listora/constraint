@@ -43,6 +43,21 @@
     (is (empty? (validate (I Number Long) 10)))
     (is (not (empty? (validate (I Number Long) 10.0))))
     (is (not (empty? (validate (I Number Long) "10")))))
+
+  (testing "functions"
+    (testing "valid"
+      (is (empty? (validate (size 5) [])))
+      (is (empty? (validate (size 5) [1 2 3 4 5])))
+      (is (empty? (validate (size 3 5) [1 2 3 4]))))
+    (testing "errors"
+      (is (not (empty? (validate (size 5) [1 2 3 4 5 6]))))
+      (is (not (empty? (validate (size 3 5) [1 2]))))
+      (is (= (validate (size 2 3) [1 2 3 4])
+             [{:error :size-out-of-bounds
+               :message "data size is out of bounds"
+               :minimum 2
+               :maximum 3
+               :found 4}]))))
   
   (testing "vectors"
     (testing "valid"
