@@ -3,6 +3,9 @@
 (defprotocol Validate
   (validate* [definition data]))
 
+(defprotocol JsonSchema
+  (json-schema [definition]))
+
 (def messages
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
@@ -28,7 +31,10 @@
 (deftype Intersection [constraints]
   Validate
   (validate* [_ data]
-    (mapcat #(validate % data) constraints)))
+    (mapcat #(validate % data) constraints))
+  JsonSchema
+  (json-schema [_]
+    (apply merge (map json-schema constraints))))
 
 (defn I [& constraints]
   (Intersection. constraints))
@@ -42,7 +48,18 @@
   Validate
   (validate* [definition data]
     (if-not (instance? definition data)
-      [(invalid-type definition data)])))
+      [(invalid-type definition data)]))
+  JsonSchema
+  (json-schema [definition]
+    {"type" (condp #(isa? %2 %1) definition
+              Integer       "integer"
+              Long          "integer"
+              BigInteger    "integer"
+              Number        "number"
+              String        "string"
+              Boolean       "boolean"
+              java.util.Map "object"
+              Iterable      "array")}))
 
 (extend-type clojure.lang.Fn
   Validate
@@ -62,7 +79,7 @@
 
 (defn- split-vector [v]
   (let [[x [_ & y]] (split-with #(not= '& %) v)]
-    (assert (= (count y) 1) "Only one item should be after & symbol")
+    (assert (<= (count y) 1) "Only one item should be after & symbol")
     [(vec x) (first y)]))
 
 (extend-type clojure.lang.IPersistentVector
@@ -83,7 +100,17 @@
        :expected definition
        :found    (mapv type data)}]
      :else
-     (seq (mapcat validate* definition data)))))
+     (seq (mapcat validate* definition data))))
+  JsonSchema
+  (json-schema [definition]
+    (let [[items add-items] (split-vector definition)]
+      (if (empty? items)
+        {"type" "array", "items" (json-schema add-items)}
+        {"type" "array"
+         "items" (mapv json-schema items)
+         "additionalItems" (if (empty? add-items)
+                             false
+                             (json-schema add-items))}))))
 
 (extend-type clojure.lang.IPersistentMap
   Validate
@@ -98,7 +125,13 @@
        :expected definition
        :found    (into {} (map (fn [[k v]] [k (type v)]) data))}]
      :else
-     (seq (mapcat (fn [[k v]] (validate* v (data k))) definition)))))
+     (seq (mapcat (fn [[k v]] (validate* v (data k))) definition))))
+  JsonSchema
+  (json-schema [definition]
+    {"type" "object"
+     "additionalProperties" false
+     "properties" (into {} (for [[k v] definition]
+                             [(name k) (json-schema v)]))}))
 
 (extend-type java.util.regex.Pattern
   Validate
@@ -106,7 +139,10 @@
     (if (and (string? data) (not (re-matches definition data)))
       [{:error   :pattern-not-matching
         :pattern definition
-        :found   data}])))
+        :found   data}]))
+  JsonSchema
+  (json-schema [definition]
+    {"pattern" (str definition)}))
 
 (defn- validate-literal [definition data]
   (if-not (= definition data)
