@@ -28,13 +28,27 @@
 (defn U [& constraints]
   (Union. constraints))
 
+(defn- move [m k1 k2]
+  (if (contains? m k1)
+    (-> m (dissoc k1) (assoc k2 (m k1)))
+    m))
+
+(defn- correct-bounds [schema]
+  (if (= (schema "type") "string")
+    (-> schema
+        (move "maxItems" "maxLength")
+        (move "minItems" "minLength"))
+    schema))
+
 (deftype Intersection [constraints]
   Validate
   (validate* [_ data]
     (mapcat #(validate % data) constraints))
   JsonSchema
   (json-schema [_]
-    (apply merge (map json-schema constraints))))
+    (->> (map json-schema constraints)
+         (apply merge)
+         (correct-bounds))))
 
 (defn I [& constraints]
   (Intersection. constraints))
@@ -69,13 +83,19 @@
   ([max]
      (size 0 max))
   ([min max]
-     (fn [data]
-       (if-let [n (try (count data) (catch Throwable _ nil))]
-         (if-not (<= min n max)
-           [{:error    :size-out-of-bounds
-             :minimum  min
-             :maximum  max
-             :found    n}])))))
+     (reify
+       Validate
+       (validate* [_ data]
+         (if-let [n (try (count data) (catch Throwable _ nil))]
+           (if-not (<= min n max)
+             [{:error    :size-out-of-bounds
+               :minimum  min
+               :maximum  max
+               :found    n}])))
+       JsonSchema
+       (json-schema [_]
+         (merge {"maxItems" max}
+                (if (zero? min) {} {"minItems" min}))))))
 
 (defn- split-vector [v]
   (let [[x [_ & y]] (split-with #(not= '& %) v)]
