@@ -1,6 +1,7 @@
-(ns constraint.core-test
+(ns constraint.validate-test
   (:require [clojure.test :refer :all]
-            [constraint.core :refer :all]))
+            [constraint.core :refer :all]
+            [constraint.validate :refer :all]))
 
 (deftest test-validate
   (testing "basic types"
@@ -55,7 +56,7 @@
     (is (not (empty? (validate (I Number Long) 10.0))))
     (is (not (empty? (validate (I Number Long) "10")))))
 
-  (testing "functions"
+  (testing "sizes"
     (testing "valid"
       (is (empty? (validate (size 5) [])))
       (is (empty? (validate (size 5) [1 2 3 4 5])))
