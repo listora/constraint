@@ -23,7 +23,10 @@
     (let [errors (map #(validate % data) constraints)]
       (if-not (some empty? errors)
         [{:error    :no-valid-constraint
-          :failures (apply concat errors)}]))))
+          :failures (apply concat errors)}])))
+  JsonSchema
+  (json-schema [_]
+    {"oneOf" (mapv json-schema constraints)}))
 
 (defn U [& constraints]
   (Union. constraints))
@@ -175,3 +178,9 @@
   (validate* [def data] (validate-literal def data))
   Object
   (validate* [def data] (validate-literal def data)))
+
+(extend-protocol JsonSchema
+  nil
+  (json-schema [_] {"enum" [nil]})
+  Object
+  (json-schema [value] {"enum" [value]}))
