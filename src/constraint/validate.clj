@@ -21,6 +21,10 @@
   (for [error (validate* definition data)]
     (assoc error :message (messages (:error error)))))
 
+(extend-type constraint.core.AnyType
+  Validate
+  (validate* [_ _] '()))
+
 (extend-type constraint.core.Union
   Validate
   (validate* [definition data]

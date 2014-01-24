@@ -16,6 +16,12 @@
                :message "data type does not match definition"
                :expected Integer
                :found Double}]))))
+
+  (testing "any type"
+    (testing "valid"
+      (is (empty? (validate Any "foo")))
+      (is (empty? (validate Any 10)))
+      (is (empty? (validate Any nil)))))
   
   (testing "values"
     (testing "strings"

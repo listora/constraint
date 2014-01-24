@@ -1,6 +1,12 @@
 (ns constraint.core
   "Core constraint types.")
 
+(deftype AnyType [])
+
+(def Any
+  "A constraint that matches any data."
+  (AnyType.))
+
 (deftype Union [constraints])
 
 (defn U

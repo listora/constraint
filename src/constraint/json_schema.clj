@@ -11,6 +11,10 @@
   (-> (json-schema* definition)
       (assoc "$schema" "http://json-schema.org/draft-04/schema#")))
 
+(extend-type constraint.core.AnyType
+  JsonSchema
+  (json-schema* [_] {}))
+
 (extend-type constraint.core.Union
   JsonSchema
   (json-schema* [definition]
