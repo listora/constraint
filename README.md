@@ -1,5 +1,7 @@
 # constraint
 
+[![Build Status](https://travis-ci.org/listora/constraint.png?branch=master)](https://travis-ci.org/listora/constraint)
+
 A Clojure library for describing, validating and coercing user input.
 
 **This library is still in early development, and has not yet been
