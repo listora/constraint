@@ -1,9 +1,11 @@
 # constraint
 
-A Clojure library for validating and coercing user input.
+A Clojure library for describing, validating and coercing user input.
 
 **This library is still in early development, and has not yet been
   released.**
+
+## Overview
 
 Constraint draws upon ideas from Prismatic's [Schema][1] library and the
 [core.typed][2] static type system. It's designed to manage user input,
@@ -16,8 +18,12 @@ the data passed between internal functions. Constraint will not help
 you find bugs in your application, but may help your users understand
 what they're doing wrong.
 
+Constraint can also turn a constraint definition into a valid
+[JSON Schema][3] (WIP).
+
 [1]: https://github.com/Prismatic/schema
 [2]: https://github.com/clojure/core.typed
+[3]: http://json-schema.org/
 
 ## Syntax
 
