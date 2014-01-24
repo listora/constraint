@@ -12,7 +12,11 @@
    :size-out-of-bounds "data size is out of bounds"
    :pattern-not-matching "data does not match regular expression in definition"})
 
-(defn validate [definition data]
+(defn validate
+  "Validate a data structure based on a constraint. If the data structure is
+  valid, an empty collection is returned. If the data is invalid, a collection
+  of errors is returned."
+  [definition data]
   (for [error (validate* definition data)]
     (assoc error :message (messages (:error error)))))
 

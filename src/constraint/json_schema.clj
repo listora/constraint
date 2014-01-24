@@ -2,7 +2,8 @@
   (:require constraint.core))
 
 (defprotocol JsonSchema
-  (json-schema [definition]))
+  (json-schema [definition]
+    "Return a JSON schema that is equivalent to the supplied constraint."))
 
 (extend-type constraint.core.Union
   JsonSchema
