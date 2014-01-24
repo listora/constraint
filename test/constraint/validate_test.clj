@@ -44,7 +44,13 @@
                [{:error :pattern-not-matching
                  :message "data does not match regular expression in definition"
                  :pattern re
-                 :found "foa"}])))))
+                 :found "foa"}]))))
+    (testing "implicit string type"
+      (is (= (validate #"foo" 10)
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :expected String
+               :found Long}]))))
   
   (testing "unions"
     (is (empty? (validate (U String nil) "foo")))

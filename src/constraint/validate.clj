@@ -32,7 +32,7 @@
 (extend-type constraint.core.Intersection
   Validate
   (validate* [definition data]
-    (mapcat #(validate % data) (.constraints definition))))
+    (vec (set (mapcat #(validate % data) (.constraints definition))))))
 
 (extend-type constraint.core.SizeBounds
   Validate
@@ -95,10 +95,13 @@
 (extend-type java.util.regex.Pattern
   Validate
   (validate* [definition data]
-    (if (and (string? data) (not (re-matches definition data)))
-      [{:error   :pattern-not-matching
-        :pattern definition
-        :found   data}])))
+    (cond
+     (not (string? data))
+     [(invalid-type String data)]
+     (not (re-matches definition data))
+     [{:error   :pattern-not-matching
+       :pattern definition
+       :found   data}])))
 
 (defn- validate-literal [definition data]
   (if-not (= definition data)
