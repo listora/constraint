@@ -1,5 +1,6 @@
 (ns constraint.json-schema
-  (:require constraint.core))
+  (:require constraint.core
+            [constraint.internal.parse :refer [split-vector]]))
 
 (defprotocol JsonSchema
   (json-schema [definition]
@@ -7,8 +8,8 @@
 
 (extend-type constraint.core.Union
   JsonSchema
-  (json-schema [_]
-    {"oneOf" (mapv json-schema constraints)}))
+  (json-schema [definition]
+    {"oneOf" (mapv json-schema (.constraints definition))}))
 
 (defn- move [m k1 k2]
   (if (contains? m k1)
@@ -24,8 +25,9 @@
 
 (extend-type constraint.core.Intersection
   JsonSchema
-  (json-schema [_]
-    (->> (map json-schema constraints)
+  (json-schema [definition]
+    (->> (.constraints definition)
+         (map json-schema)
          (apply merge)
          (correct-bounds))))
 
