@@ -6,6 +6,7 @@
 (deftest test-json-schema
   (testing "basic schema"
     (is (= (json-schema {:foo String})
-           {"type" "object"
+           {"$schema" "http://json-schema.org/draft-04/schema#"
+            "type" "object"
             "properties" {"foo" {"type" "string"}}
             "additionalProperties" false}))))
