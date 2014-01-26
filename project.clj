@@ -1,4 +1,4 @@
-(defproject constraint "0.1.0-SNAPSHOT"
+(defproject listora/constraint "0.1.0-SNAPSHOT"
   :description "Data constraint library"
   :url "https://github.com/listora/constraint"
   :license {:name "Eclipse Public License"
