@@ -126,6 +126,46 @@ be matched against exactly one key/value pair in the data map.
 (validate {"x" Number, String Number} {"x" 1, "y" 2})  ;; => true
 ```
 
+#### Many
+
+In order to match many items of the same type within a collection, a
+constraint may be marked with the `&` form to denote that it applies
+zero or more times.
+
+```clojure
+(validate [(& String)] ["foo" "bar" "baz"])              ;; => true
+(validate [(& String)] [])                               ;; => true
+(validate [String (& Number)] ["foo" 1 2 3])             ;; => true
+(validate [String (& Number) String] ["foo" 1 2 "bar"])  ;; => true
+```
+
+In a map, the many constraint must be placed on the key:
+
+```clojure
+(validate {(& String) Number} {"x" 1, "y" 2})  ;; => true
+(validate {(& String) Number} {})              ;; => true
+```
+
+Outside of a collection, this form will cause a syntax exception.
+
+#### Optional
+
+To denote an optional key or value in a collection, a constraint may
+be marked with the `?` form, to denote it is not required.
+
+```clojure
+(validate [(? String) Number] [1])        ;; => true
+(validate [(? String) Number] ["foo" 1])  ;; => true
+```
+
+In maps, the optional constraint must be placed on the key:
+
+```clojure
+(validate {(? :x) Number} {:x 10})  ;; => true
+(validate {(? :x) Number} {})       ;; => true
+```
+
+Outside of a collection, this form will cause a syntax exception.
 
 ## License
 
