@@ -81,6 +81,20 @@
      :else
      (seq (mapcat validate* definition data)))))
 
+(defn- match-keys [definition data-key]
+  (->> (keys definition)
+       (filter #(empty? (validate* % data-key)))
+       (seq)))
+
+(defn- validate-kv [definition [dk dv]]
+  (let [errors (->> (match-keys definition dk)
+                    (map #(validate* (definition %) dv)))]
+    (if-not (some empty? errors)
+      (if (> (count errors) 1)
+        [{:error    :no-valid-constraint
+          :failures (apply concat errors)}]
+        (first errors)))))
+
 (extend-type clojure.lang.IPersistentMap
   Validate
   (validate* [definition data]
@@ -89,12 +103,12 @@
      [{:error    :invalid-type
        :expected clojure.lang.IPersistentMap
        :found    (type data)}]
-     (not= (set (keys definition)) (set (keys data)))
+     (not (every? #(match-keys definition %) (keys data)))
      [{:error    :invalid-type
        :expected definition
        :found    (into {} (map (fn [[k v]] [k (type v)]) data))}]
      :else
-     (seq (mapcat (fn [[k v]] (validate* v (data k))) definition)))))
+     (seq (mapcat #(validate-kv definition %) data)))))
 
 (extend-type java.util.regex.Pattern
   Validate
