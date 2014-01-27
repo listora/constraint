@@ -29,63 +29,102 @@ Constraint can also turn a constraint definition into a valid
 
 ## Syntax
 
-Constraint works by describing the data it expects to find. The
-simplest form of constraint is to match the type:
+Constraint works by describing the data it expects to find. The data
+is considered valid if it matches a constraint definition.
+
+#### Any
+
+A constraint that always matches.
 
 ```clojure
-(validate String "foo")
-(validate Number 100)
+(validate Any "foobar")  ;; => true
+(validate Any :foobar)   ;; => true
 ```
 
-Constraint also understands types embedded in vectors or maps:
+#### None
+
+A constraint that never matches. Not particularly useful in practise,
+but included for completeness.
 
 ```clojure
-(validate [Number Number] [16 45])
-(validate [String '& Number] ["foo" 1 2 3])
-(validate {:name String} {:name "Bob Jones"})
+(validate None :foo)  ;; => false
 ```
 
-As well as types, literal values such as strings, numbers or keywords
-can be used:
+#### Literals
+
+A literal constraint can be a String, Keyword, Symbol or Number. It
+matches if the data is exactly equal to the constraint.
 
 ```clojure
-(validate :foo :foo)
-(validate nil nil)
+(validate :foo :foo)  ;; => true
+(validate 5 6)        ;; => false
 ```
 
-For more complex validations, Constraint provides *unions* and
-*intersections*. A union is considered valid if any **one** containing
-constraint is valid. 
+#### Types
+
+A type constraint can be a class, interface or protocol. It matches if
+the type of the data matches or satisfies the constraint.
 
 ```clojure
-(validate (U String nil) "foo")
-(validate (U String nil) nil)
+(validate Double 1.5)  ;; => true
+(validate Number 1.5)  ;; => true
+(validate String 1.5)  ;; => false
 ```
 
-Nullable types are one common use-case for unions. Another is enums:
+#### Regular Expressions
+
+A regular expression constraint matches if the data is a string, and
+if the string matches the expression.
 
 ```clojure
-(validate (U :yes :no) :yes)
+(validate #"a+" "aaaa")  ;; => true
 ```
 
-An intersection is only valid if **all** containing constraints are
-valid. This can be used to combine additional constraints.
+#### Unions
 
-Regular expressions can be used to further constrain String types:
+A union is a way of combining constraints. It matches if *any* of the
+inner constraints are valid.
 
 ```clojure
-(validate (I String #"fo+") "foooo")
+(validate (U :yes :no) :yes)   ;; => true
+(validate (U String nil) nil)  ;; => true
 ```
 
-And the `size` function can be used to set a limit on the maximum and
-minimum size of a countable collection or string:
+#### Intersections
+
+An intersection is another way of combining constraints. It matches if
+*all* of the inner constraints are valid.
 
 ```clojure
-(validate (I String (size 16)) "foobar")
+(validate (I String #"f..t") "foot")  ;; => true
 ```
 
-Further validations can be constructed by implementing the
-`constraint.validate/Validate` protocol.
+#### Vectors
+
+Constraints can be placed in a vector to match values contained in a
+sequential collection. Each constraint in the vector is matched
+against the corresponding item in the data collection. Constraints in
+vectors can be arbitrarily nested.
+
+```clojure
+(validate [Number Number] [4 5])      ;; => true
+(validate [String Number] ["foo" 5])  ;; => true
+(validate [Number] [1 2])             ;; => false
+(validate [String String] ["foo"])    ;; => false
+```
+
+#### Maps
+
+Constraints can also be placed in maps to validate associative
+collections. Each key/value pair in the constraint map must
+be matched against exactly one key/value pair in the data map.
+
+```clojure
+(validate {:x Number} {:x 1})                          ;; => true
+(validate {String Number} {"x" 1}                      ;; => true
+(validate {String Number} {"x" 1, "y" 2})              ;; => false
+(validate {"x" Number, String Number} {"x" 1, "y" 2})  ;; => true
+```
 
 
 ## License
