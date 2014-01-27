@@ -13,7 +13,7 @@ Constraint draws upon ideas from Prismatic's [Schema][1] library and the
 [core.typed][2] static type system. It's designed to manage user input,
 particularly in the case of a public-facing web service. For this
 reason, specific emphasis is placed on providing readable and useful
-error messages.
+user-facing error messages.
 
 Unlike Schema and core.typed, Constraint does not concern itself with
 the data passed between internal functions. Constraint will not help
