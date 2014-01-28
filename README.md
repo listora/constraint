@@ -37,8 +37,8 @@ is considered valid if it matches a constraint definition.
 A constraint that always matches.
 
 ```clojure
-(validate Any "foobar")  ;; => true
-(validate Any :foobar)   ;; => true
+(valid? Any "foobar")  ;; => true
+(valid? Any :foobar)   ;; => true
 ```
 
 #### Literals
@@ -47,8 +47,8 @@ A literal constraint can be a String, Keyword, Symbol or Number. It
 matches if the data is exactly equal to the constraint.
 
 ```clojure
-(validate :foo :foo)  ;; => true
-(validate 5 6)        ;; => false
+(valid? :foo :foo)  ;; => true
+(valid? 5 6)        ;; => false
 ```
 
 #### Types
@@ -57,9 +57,9 @@ A type constraint can be a class, interface or protocol. It matches if
 the type of the data matches or satisfies the constraint.
 
 ```clojure
-(validate Double 1.5)  ;; => true
-(validate Number 1.5)  ;; => true
-(validate String 1.5)  ;; => false
+(valid? Double 1.5)  ;; => true
+(valid? Number 1.5)  ;; => true
+(valid? String 1.5)  ;; => false
 ```
 
 #### Regular Expressions
@@ -68,7 +68,7 @@ A regular expression constraint matches if the data is a string, and
 if the string matches the expression.
 
 ```clojure
-(validate #"a+" "aaaa")  ;; => true
+(valid? #"a+" "aaaa")  ;; => true
 ```
 
 #### Unions
@@ -77,8 +77,8 @@ A union is a way of combining constraints. It matches if *any* of the
 inner constraints are valid.
 
 ```clojure
-(validate (U :yes :no) :yes)   ;; => true
-(validate (U String nil) nil)  ;; => true
+(valid? (U :yes :no) :yes)   ;; => true
+(valid? (U String nil) nil)  ;; => true
 ```
 
 #### Intersections
@@ -87,7 +87,7 @@ An intersection is another way of combining constraints. It matches if
 *all* of the inner constraints are valid.
 
 ```clojure
-(validate (I String #"f..t") "foot")  ;; => true
+(valid? (I String #"f..t") "foot")  ;; => true
 ```
 
 #### Vectors
@@ -98,23 +98,23 @@ against the corresponding item in the data collection. Constraints in
 vectors can be arbitrarily nested.
 
 ```clojure
-(validate [Number Number] [4 5])      ;; => true
-(validate [String Number] ["foo" 5])  ;; => true
-(validate [Number] [1 2])             ;; => false
-(validate [String String] ["foo"])    ;; => false
+(valid? [Number Number] [4 5])      ;; => true
+(valid? [String Number] ["foo" 5])  ;; => true
+(valid? [Number] [1 2])             ;; => false
+(valid? [String String] ["foo"])    ;; => false
 ```
 
 #### Maps
 
-Constraints can also be placed in maps to validate associative
+Constraints can also be placed in maps to valid? associative
 collections. Each key/value pair in the constraint map must
 be matched against exactly one key/value pair in the data map.
 
 ```clojure
-(validate {:x Number} {:x 1})                          ;; => true
-(validate {String Number} {"x" 1}                      ;; => true
-(validate {String Number} {"x" 1, "y" 2})              ;; => false
-(validate {"x" Number, String Number} {"x" 1, "y" 2})  ;; => true
+(valid? {:x Number} {:x 1})                          ;; => true
+(valid? {String Number} {"x" 1}                      ;; => true
+(valid? {String Number} {"x" 1, "y" 2})              ;; => false
+(valid? {"x" Number, String Number} {"x" 1, "y" 2})  ;; => true
 ```
 
 #### Many
@@ -124,17 +124,17 @@ constraint may be marked with the `&` form to denote that it applies
 zero or more times.
 
 ```clojure
-(validate [(& String)] ["foo" "bar" "baz"])              ;; => true
-(validate [(& String)] [])                               ;; => true
-(validate [String (& Number)] ["foo" 1 2 3])             ;; => true
-(validate [String (& Number) String] ["foo" 1 2 "bar"])  ;; => true
+(valid? [(& String)] ["foo" "bar" "baz"])              ;; => true
+(valid? [(& String)] [])                               ;; => true
+(valid? [String (& Number)] ["foo" 1 2 3])             ;; => true
+(valid? [String (& Number) String] ["foo" 1 2 "bar"])  ;; => true
 ```
 
 In a map, the many constraint must be placed on the key:
 
 ```clojure
-(validate {(& String) Number} {"x" 1, "y" 2})  ;; => true
-(validate {(& String) Number} {})              ;; => true
+(valid? {(& String) Number} {"x" 1, "y" 2})  ;; => true
+(valid? {(& String) Number} {})              ;; => true
 ```
 
 Outside of a collection, this form will cause a syntax exception.
@@ -145,15 +145,15 @@ To denote an optional key or value in a collection, a constraint may
 be marked with the `?` form, to denote it is not required.
 
 ```clojure
-(validate [(? String) Number] [1])        ;; => true
-(validate [(? String) Number] ["foo" 1])  ;; => true
+(valid? [(? String) Number] [1])        ;; => true
+(valid? [(? String) Number] ["foo" 1])  ;; => true
 ```
 
 In maps, the optional constraint must be placed on the key:
 
 ```clojure
-(validate {(? :x) Number} {:x 10})  ;; => true
-(validate {(? :x) Number} {})       ;; => true
+(valid? {(? :x) Number} {:x 10})  ;; => true
+(valid? {(? :x) Number} {})       ;; => true
 ```
 
 Outside of a collection, this form will cause a syntax exception.
