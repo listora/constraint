@@ -102,6 +102,9 @@
         :expected clojure.lang.Sequential
         :found    (type data)}])))
 
+(defn- map-vals [m f]
+  (into {} (for [[k v] m] [k (f v)])))
+
 (defn- validate-map [def data]
   (let [type-error (invalid-type def (map-vals data type))]
     (letfn [(validate-map* [def data]
