@@ -102,34 +102,30 @@
         :expected clojure.lang.Sequential
         :found    (type data)}])))
 
-(defn- match-keys [definition data-key]
-  (->> (keys definition)
-       (filter #(valid? % data-key))
-       (seq)))
-
-(defn- validate-kv [definition [dk dv]]
-  (let [errors (->> (match-keys definition dk)
-                    (map #(validate* (definition %) dv)))]
-    (if-not (some empty? errors)
-      (if (> (count errors) 1)
-        [{:error    :no-valid-constraint
-          :failures (apply concat errors)}]
-        (first errors)))))
+(defn- validate-map [def data]
+  (let [type-error (invalid-type def (map-vals data type))]
+    (letfn [(validate-map* [def data]
+              (if (empty? def)
+                (if-not (empty? data) [type-error])
+                (let [[dk dv] (first data)
+                      data    (dissoc data dk)
+                      matches (filter #(valid? (key %) dk) def)
+                      errors  (for [[k v] matches]
+                                (concat (validate* v dv)
+                                        (validate-map* (dissoc def k) data)))]
+                  (if (empty? matches)
+                    [type-error]
+                    (first (sort-by count errors))))))]
+      (validate-map* def data))))
 
 (extend-type clojure.lang.IPersistentMap
   Validate
   (validate* [definition data]
-    (cond
-     (not (map? data))
-     [{:error    :invalid-type
-       :expected clojure.lang.IPersistentMap
-       :found    (type data)}]
-     (not (every? #(match-keys definition %) (keys data)))
-     [{:error    :invalid-type
-       :expected definition
-       :found    (into {} (map (fn [[k v]] [k (type v)]) data))}]
-     :else
-     (seq (mapcat #(validate-kv definition %) data)))))
+    (if (map? data)
+      (validate-map definition data)
+      [{:error    :invalid-type
+        :expected clojure.lang.IPersistentMap
+        :found    (type data)}])))
 
 (extend-type java.util.regex.Pattern
   Validate

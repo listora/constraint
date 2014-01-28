@@ -121,7 +121,7 @@
     (testing "valid"
       (is (empty? (validate {:foo String} {:foo "bar"})))
       (is (empty? (validate {:foo String, :bar Number} {:foo "x" :bar 1})))
-      (is (empty? (validate {String Number} {"foo" 1 "bar" 2}))))
+      (is (empty? (validate {String Number} {"foo" 1}))))
     (testing "keys"
       (is (= (validate {:foo String} {:foo "bar" :baz "quz"})
              [{:error :invalid-type
