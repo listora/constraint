@@ -41,15 +41,6 @@ A constraint that always matches.
 (validate Any :foobar)   ;; => true
 ```
 
-#### None
-
-A constraint that never matches. Not particularly useful in practise,
-but included for completeness.
-
-```clojure
-(validate None :foo)  ;; => false
-```
-
 #### Literals
 
 A literal constraint can be a String, Keyword, Symbol or Number. It
