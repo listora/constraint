@@ -21,6 +21,12 @@
   (for [error (validate* definition data)]
     (assoc error :message (messages (:error error)))))
 
+(defn valid?
+  "Return true if the data structure is valid according to the supplied
+  constraint, or false if it is not."
+  [definition data]
+  (empty? (validate* definition data)))
+
 (extend-type constraint.core.AnyType
   Validate
   (validate* [_ _] '()))
@@ -83,7 +89,7 @@
 
 (defn- match-keys [definition data-key]
   (->> (keys definition)
-       (filter #(empty? (validate* % data-key)))
+       (filter #(valid? % data-key))
        (seq)))
 
 (defn- validate-kv [definition [dk dv]]

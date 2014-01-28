@@ -137,3 +137,7 @@
                :message "data type does not match definition"
                :expected String
                :found Long}])))))
+
+(deftest test-valid?
+  (is (true? (valid? String "foo")))
+  (is (false? (valid? String 10))))
