@@ -23,6 +23,20 @@
   [& constraints]
   (Intersection. constraints))
 
+(deftype Optional [constraint])
+
+(defn ?
+  "Denote the inner constraint as optional when embedded in a collection."
+  [constraint]
+  (Optional. constraint))
+
+(deftype Many [constraint])
+
+(defn &
+  "Denote the inner constraint as matching zero or more items in a collection."
+  [constraint]
+  (Many. constraint))
+
 (deftype SizeBounds [min max])
 
 (defn size
