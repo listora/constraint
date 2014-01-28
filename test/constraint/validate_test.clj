@@ -145,7 +145,13 @@
              [{:error :invalid-type
                :message "data type does not match definition"
                :expected String
-               :found Long}])))))
+               :found Long}])))
+    (testing "optional keys"
+      (is (empty? (validate {(? :x) Number} {:x 1})))
+      (is (empty? (validate {(? :x) Number} {})))
+      (is (empty? (validate {:x Number (? :y) Number} {:x 1 :y 2})))
+      (is (empty? (validate {:x Number (? :y) Number} {:x 1})))
+      (is (not (empty? (validate {:x Number (? :y) Number} {})))))))
 
 (deftest test-valid?
   (is (true? (valid? String "foo")))

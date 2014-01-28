@@ -105,20 +105,35 @@
 (defn- map-vals [m f]
   (into {} (for [[k v] m] [k (f v)])))
 
+(defn- mandatory? [x]
+  (not (or (instance? constraint.core.Many x)
+           (instance? constraint.core.Optional x))))
+
+(defn- valid-key? [def data]
+  (if (mandatory? def)
+    (valid? def data)
+    (valid? (.constraint def) data)))
+
 (defn- validate-map [def data]
   (let [type-error (invalid-type def (map-vals data type))]
     (letfn [(validate-map* [def data]
-              (if (empty? def)
-                (if-not (empty? data) [type-error])
-                (let [[dk dv] (first data)
-                      data    (dissoc data dk)
-                      matches (filter #(valid? (key %) dk) def)
-                      errors  (for [[k v] matches]
-                                (concat (validate* v dv)
-                                        (validate-map* (dissoc def k) data)))]
-                  (if (empty? matches)
-                    [type-error]
-                    (first (sort-by count errors))))))]
+              (cond
+               (and (empty? def) (not-empty data))
+               [type-error]
+
+               (and (empty? data) (some mandatory? (keys def)))
+               [type-error]
+
+               (and (not-empty def) (not-empty data))
+               (let [[dk dv] (first data)
+                     data    (dissoc data dk)
+                     matches (filter #(valid-key? (key %) dk) def)
+                     errors  (for [[k v] matches]
+                               (concat (validate* v dv)
+                                       (validate-map* (dissoc def k) data)))]
+                 (if (empty? matches)
+                   [type-error]
+                   (first (sort-by count errors))))))]
       (validate-map* def data))))
 
 (extend-type clojure.lang.IPersistentMap
