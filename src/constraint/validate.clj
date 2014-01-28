@@ -44,6 +44,11 @@
   (validate* [definition data]
     (vec (set (mapcat #(validate % data) (.constraints definition))))))
 
+(extend-type constraint.core.Many
+  Validate
+  (validate* [definition data]
+    (validate* (.constraint definition) data)))
+
 (extend-type constraint.core.SizeBounds
   Validate
   (validate* [definition data]
@@ -59,33 +64,46 @@
 (defn- invalid-type [expected found]
   {:error    :invalid-type
    :expected expected
-   :found    (type found)})
+   :found    found})
 
 (extend-type Class
   Validate
   (validate* [definition data]
     (if-not (instance? definition data)
-      [(invalid-type definition data)])))
+      [(invalid-type definition (type data))])))
+
+(defn- many? [x]
+  (instance? constraint.core.Many x))
+
+(defn- validate-seq [def data]
+  (let [type-error (invalid-type def (mapv type data))]
+    (loop [def def, data data, errors '()]
+      (cond
+       (empty? def)
+       (if (seq data)
+         (cons type-error errors)
+         errors)
+
+       (many? (first def))
+       (if (valid? (first def) (first data))
+         (recur def (rest data) errors)
+         (recur (rest def) data errors))
+
+       (empty? data)
+       (cons type-error errors)
+
+       :else
+       (let [item-errors (validate* (first def) (first data))]
+         (recur (rest def) (rest data) (concat errors item-errors)))))))
 
 (extend-type clojure.lang.IPersistentVector
   Validate
   (validate* [definition data]
-    (cond
-     (some #(= '& %) definition)
-     (let [[defs def-rest] (split-vector definition)]
-       (concat
-        (validate* (vec defs) (vec (take (count defs) data)))
-        (mapcat #(validate* def-rest %) (drop (count defs) data))))
-     (not (sequential? data))
-     [{:error    :invalid-type
-       :expected clojure.lang.Sequential
-       :found    (type data)}]
-     (not= (count definition) (count data))
-     [{:error    :invalid-type
-       :expected definition
-       :found    (mapv type data)}]
-     :else
-     (seq (mapcat validate* definition data)))))
+    (if (sequential? data)
+      (validate-seq definition data)
+      [{:error    :invalid-type
+        :expected clojure.lang.Sequential
+        :found    (type data)}])))
 
 (defn- match-keys [definition data-key]
   (->> (keys definition)
@@ -121,7 +139,7 @@
   (validate* [definition data]
     (cond
      (not (string? data))
-     [(invalid-type String data)]
+     [(invalid-type String (type data))]
      (not (re-matches definition data))
      [{:error   :pattern-not-matching
        :pattern definition

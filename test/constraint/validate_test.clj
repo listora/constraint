@@ -98,15 +98,18 @@
                :message "data type does not match definition"
                :expected clojure.lang.Sequential
                :found clojure.lang.PersistentArrayMap}])))
-    (testing "item types"
+    (testing "inner constraints"
       (is (not (empty? (validate [String Number] ["foo" "10"])))))
-    (testing "rest type"
-      (is (empty? (validate ['& String] ["foo" "bar" "baz"])))
-      (is (empty? (validate ['& String] [])))
-      (is (empty? (validate [Number '& String] [10 "foo" "bar"])))
-      (is (not (empty? (validate [Number '& String] []))))
-      (is (not (empty? (validate [Number '& String] ["foo"]))))
-      (is (not (empty? (validate [Number '& String] [10 "foo" 5]))))))
+    (testing "many constraint"
+      (is (empty? (validate [(& String)] ["foo" "bar" "baz"])))
+      (is (empty? (validate [(& String)] [])))
+      (is (empty? (validate [Number (& String)] [10 "foo" "bar"])))
+      (is (not (empty? (validate [Number (& String)] []))))
+      (is (not (empty? (validate [Number (& String)] ["foo"]))))
+      (is (not (empty? (validate [Number (& String)] [10 "foo" 5]))))
+      (is (empty? (validate [(& String) Number] ["foo" "bar" 5])))
+      (is (empty? (validate [(& String) Number] [7])))
+      (is (not (empty? (validate [(& String) Number] ["foo"]))))))
 
   (testing "maps"
     (testing "valid"
