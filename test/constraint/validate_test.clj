@@ -151,7 +151,14 @@
       (is (empty? (validate {(? :x) Number} {})))
       (is (empty? (validate {:x Number (? :y) Number} {:x 1 :y 2})))
       (is (empty? (validate {:x Number (? :y) Number} {:x 1})))
-      (is (not (empty? (validate {:x Number (? :y) Number} {})))))))
+      (is (not (empty? (validate {:x Number (? :y) Number} {})))))
+    (testing "many keys"
+      (is (empty? (validate {(& String) Number} {})))
+      (is (empty? (validate {(& String) Number} {"foo" 1})))
+      (is (empty? (validate {(& String) Number} {"foo" 1, "bar" 2})))
+      (is (not (empty? (validate {(& String) Number} {"foo" 1, :bar 2}))))
+      (is (empty? (validate {"foo" String, (& String) Number} {"foo" "bar", "baz" 3})))
+      (is (not (empty? (validate {"foo" String, (& String) Number} {"foo" 4, "baz" 5})))))))
 
 (deftest test-valid?
   (is (true? (valid? String "foo")))

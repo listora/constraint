@@ -67,6 +67,12 @@
     (if-not (instance? definition data)
       [(invalid-type definition (type data))])))
 
+(defn- many? [x]
+  (instance? constraint.core.Many x))
+
+(defn- optional? [x]
+  (instance? constraint.core.Optional x))
+
 (defn- validate-seq [def data]
   (let [type-error (invalid-type def (mapv type data))]
     (loop [def def, data data, errors '()]
@@ -76,12 +82,12 @@
          (cons type-error errors)
          errors)
 
-       (instance? constraint.core.Many (first def))
+       (many? (first def))
        (if (valid? (.constraint (first def)) (first data))
          (recur def (rest data) errors)
          (recur (rest def) data errors))
 
-       (instance? constraint.core.Optional (first def))
+       (optional? (first def))
        (if (valid? (.constraint (first def)) (first data))
          (recur (rest def) (rest data) errors)
          (recur (rest def) data errors))
@@ -106,8 +112,7 @@
   (into {} (for [[k v] m] [k (f v)])))
 
 (defn- mandatory? [x]
-  (not (or (instance? constraint.core.Many x)
-           (instance? constraint.core.Optional x))))
+  (not (or (many? x) (optional? x))))
 
 (defn- valid-key? [def data]
   (if (mandatory? def)
@@ -124,13 +129,14 @@
                (and (empty? data) (some mandatory? (keys def)))
                [type-error]
 
-               (and (not-empty def) (not-empty data))
+               (not-empty data)
                (let [[dk dv] (first data)
                      data    (dissoc data dk)
                      matches (filter #(valid-key? (key %) dk) def)
                      errors  (for [[k v] matches]
-                               (concat (validate* v dv)
-                                       (validate-map* (dissoc def k) data)))]
+                               (let [def (if (many? k) def (dissoc def k))]
+                                 (concat (validate* v dv)
+                                         (validate-map* def data))))]
                  (if (empty? matches)
                    [type-error]
                    (first (sort-by count errors))))))]
