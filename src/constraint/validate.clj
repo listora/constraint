@@ -44,11 +44,6 @@
   (validate* [definition data]
     (vec (set (mapcat #(validate % data) (.constraints definition))))))
 
-(extend-type constraint.core.Many
-  Validate
-  (validate* [definition data]
-    (validate* (.constraint definition) data)))
-
 (extend-type constraint.core.SizeBounds
   Validate
   (validate* [definition data]
@@ -72,9 +67,6 @@
     (if-not (instance? definition data)
       [(invalid-type definition (type data))])))
 
-(defn- many? [x]
-  (instance? constraint.core.Many x))
-
 (defn- validate-seq [def data]
   (let [type-error (invalid-type def (mapv type data))]
     (loop [def def, data data, errors '()]
@@ -84,9 +76,14 @@
          (cons type-error errors)
          errors)
 
-       (many? (first def))
-       (if (valid? (first def) (first data))
+       (instance? constraint.core.Many (first def))
+       (if (valid? (.constraint (first def)) (first data))
          (recur def (rest data) errors)
+         (recur (rest def) data errors))
+
+       (instance? constraint.core.Optional (first def))
+       (if (valid? (.constraint (first def)) (first data))
+         (recur (rest def) (rest data) errors)
          (recur (rest def) data errors))
 
        (empty? data)

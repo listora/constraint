@@ -109,7 +109,13 @@
       (is (not (empty? (validate [Number (& String)] [10 "foo" 5]))))
       (is (empty? (validate [(& String) Number] ["foo" "bar" 5])))
       (is (empty? (validate [(& String) Number] [7])))
-      (is (not (empty? (validate [(& String) Number] ["foo"]))))))
+      (is (not (empty? (validate [(& String) Number] ["foo"])))))
+    (testing "optional constraint"
+      (is (empty? (validate [(? String) Number] ["foo" 10])))
+      (is (empty? (validate [(? String) Number] [10])))
+      (is (not (empty? (validate [(? String) Number] []))))
+      (is (not (empty? (validate [(? String) Number] ["foo"]))))
+      (is (not (empty? (validate [(? String) Number] ["foo" "bar" 3]))))))
 
   (testing "maps"
     (testing "valid"

@@ -30,15 +30,18 @@
   [constraint]
   (Optional. constraint))
 
-(deftype Many [constraint])
+(defmethod print-method Optional [^Optional opt ^java.io.Writer w]
+  (.write w (str "(? " (pr-str (.constraint opt)) ")")))
 
-(defmethod print-method Many [^Many many ^java.io.Writer w]
-  (.write w (str "(& " (pr-str (.constraint many)) ")")))
+(deftype Many [constraint])
 
 (defn &
   "Denote the inner constraint as matching zero or more items in a collection."
   [constraint]
   (Many. constraint))
+
+(defmethod print-method Many [^Many many ^java.io.Writer w]
+  (.write w (str "(& " (pr-str (.constraint many)) ")")))
 
 (deftype SizeBounds [min max])
 
