@@ -27,6 +27,16 @@ Constraint can also turn a constraint definition into a valid
 [2]: https://github.com/clojure/core.typed
 [3]: http://json-schema.org/
 
+## Example
+
+```clojure
+{:name String
+ :address [String]
+ :birth-date Date
+ :marital-status (U :single :married)
+ (? :phone-number) (I String #"[0-9]+")}
+```
+
 ## Syntax
 
 Constraint works by describing the data it expects to find. The data
