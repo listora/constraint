@@ -33,10 +33,13 @@
            {"type" "array", "items" [{"type" "string"}]
             "additionalItems" {"type" "number"}})))
 
-  (testing "basic schema"
-    (is (= (json-schema {:foo String})
-           {"$schema" "http://json-schema.org/draft-04/schema#"
-            "type" "object"
+  (testing "maps"
+    (is (= (json-schema* {:foo String})
+           {"type" "object"
             "properties" {"foo" {"type" "string"}}
             "required" ["foo"]
+            "additionalProperties" false}))
+    (is (= (json-schema* {(? :foo) String})
+           {"type" "object"
+            "properties" {"foo" {"type" "string"}}
             "additionalProperties" false}))))

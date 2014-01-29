@@ -103,17 +103,24 @@
   (let [x (if (optional? x) (.constraint x) x)]
     (or (string? x) (symbol? x) (keyword? x))))
 
+(defn- required-keys [definition]
+  (->> (keys definition)
+       (filter map-key?)
+       (remove optional?)
+       (map name)))
+
 (extend-type clojure.lang.IPersistentMap
   JsonSchema
   (json-schema* [definition]
-    {"type" "object"
-     "additionalProperties"
-     (not (every? map-key? (keys definition)))
-     "required"
-     (vec (->> (keys definition) (filter map-key?) (remove optional?) (map name)))
-     "properties"
-     (into {} (for [[k v] definition :when (map-key? k)]
-                [(name (constraint k)) (json-schema* v)]))}))
+    (merge
+     {"type" "object"
+      "additionalProperties"
+      (not (every? map-key? (keys definition)))
+      "properties"
+      (into {} (for [[k v] definition :when (map-key? k)]
+                 [(name (constraint k)) (json-schema* v)]))}
+     (if-let [required (seq (required-keys definition))]
+       {"required" (vec required)}))))
 
 (extend-type java.util.regex.Pattern
   JsonSchema
