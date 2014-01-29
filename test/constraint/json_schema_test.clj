@@ -52,4 +52,10 @@
     (is (= (json-schema* {(& String) Number})
            {"type" "object"
             "properties" {}
-            "additionalProperties" {"type" "number"}}))))
+            "additionalProperties" {"type" "number"}})))
+
+  (testing "intersections"
+    (is (= (json-schema* (I String #"a+"))
+           {"type" "string", "pattern" "a+"}))
+    (is (= (json-schema* (I #"^a" #"z$"))
+           {"allOf" [{"type" "string", "pattern" "^a"} {"pattern" "z$"}]}))))

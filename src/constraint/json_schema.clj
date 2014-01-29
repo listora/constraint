@@ -41,7 +41,7 @@
      (list {k v}))))
 
 (defn- merge-interactions [schemas]
-  (reduce assoc-in-available [] (apply concat schemas)))
+  (reduce assoc-in-available [] (set (apply concat schemas))))
 
 (extend-type constraint.core.Intersection
   JsonSchema
