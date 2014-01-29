@@ -21,10 +21,6 @@
   (testing "any"
     (is (= (json-schema* Any) {})))
 
-  (testing "enums"
-    (is (= (json-schema* (U :no :yes)) {"enum" ["no" "yes"]}))
-    (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]})))
-
   (testing "patterns"
     (is (= (json-schema* #"a+") {"type" "string", "pattern" "a+"})))
 
@@ -58,4 +54,12 @@
     (is (= (json-schema* (I String #"a+"))
            {"type" "string", "pattern" "a+"}))
     (is (= (json-schema* (I #"^a" #"z$"))
-           {"allOf" [{"type" "string", "pattern" "^a"} {"pattern" "z$"}]}))))
+           {"allOf" [{"type" "string", "pattern" "^a"} {"pattern" "z$"}]})))
+
+  (testing "unions"
+    (is (= (json-schema* (U String Number))
+           {"oneOf" [{"type" "string"} {"type" "number"}]})))
+
+  (testing "enums"
+    (is (= (json-schema* (U :no :yes)) {"enum" ["no" "yes"]}))
+    (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]}))))
