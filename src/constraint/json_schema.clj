@@ -20,25 +20,10 @@
   (json-schema* [definition]
     {"oneOf" (mapv json-schema* (.constraints definition))}))
 
-(defn- move [m k1 k2]
-  (if (contains? m k1)
-    (-> m (dissoc k1) (assoc k2 (m k1)))
-    m))
-
-(defn- correct-bounds [schema]
-  (if (= (schema "type") "string")
-    (-> schema
-        (move "maxItems" "maxLength")
-        (move "minItems" "minLength"))
-    schema))
-
 (extend-type constraint.core.Intersection
   JsonSchema
   (json-schema* [definition]
-    (->> (.constraints definition)
-         (map json-schema*)
-         (apply merge)
-         (correct-bounds))))
+    {"allOf" (mapv json-schema* (.constraints definition))}))
 
 (extend-type constraint.core.SizeBounds
   JsonSchema
