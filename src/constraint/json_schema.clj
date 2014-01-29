@@ -42,9 +42,11 @@
 
 (extend-type constraint.core.SizeBounds
   JsonSchema
-  (json-schema* [_]
-    (merge {"maxItems" max}
-           (if (zero? min) {} {"minItems" min}))))
+  (json-schema* [definition]
+    (let [min (.min definition)
+          max (.max definition)]
+      (merge {"maxItems" max}
+             (if (zero? min) {} {"minItems" min})))))
 
 (extend-type Class
   JsonSchema
