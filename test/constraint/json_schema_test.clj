@@ -9,4 +9,5 @@
            {"$schema" "http://json-schema.org/draft-04/schema#"
             "type" "object"
             "properties" {"foo" {"type" "string"}}
+            "required" ["foo"]
             "additionalProperties" false}))))
