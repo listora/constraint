@@ -31,10 +31,25 @@
         {"oneOf" (vec schemas)}
         (first schemas)))))
 
+(defn- assoc-in-available [schemas [k v]]
+  (lazy-seq
+   (if (seq schemas)
+     (let [s (first schemas)]
+       (if (contains? s k)
+         (cons s (assoc-in-available (rest schemas) [k v]))
+         (cons (assoc s k v) (rest schemas))))
+     (list {k v}))))
+
+(defn- merge-interactions [schemas]
+  (reduce assoc-in-available [] (apply concat schemas)))
+
 (extend-type constraint.core.Intersection
   JsonSchema
   (json-schema* [definition]
-    {"allOf" (mapv json-schema* (.constraints definition))}))
+    (let [schemas (merge-interactions (mapv json-schema* (.constraints definition)))]
+      (if (> (count schemas) 1)
+        {"allOf" (vec schemas)}
+        (first schemas)))))
 
 (extend-type constraint.core.SizeBounds
   JsonSchema
