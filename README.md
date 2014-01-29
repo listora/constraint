@@ -168,6 +168,61 @@ In maps, the optional constraint must be placed on the key:
 
 Outside of a collection, this form will cause a syntax exception.
 
+
+## JSON Schema
+
+Constraints can be serialized into [JSON Schema][1] for documentation
+purposes.
+
+[1]: http://json-schema.org/
+
+For example:
+
+```clojure
+(json-schema {:name String, (? :age) Integer})
+```
+
+Will produce:
+
+```json
+{
+    "$schema"   "http://json-schema.org/draft-04/schema#",
+    "type"      "object",
+    "required": ["name"],
+    "additionalProperties": false,
+    "properties": {
+        "name": {"type": "string"},
+        "age":  {"type": "integer"}
+    }
+}
+```
+
+Additional documentation can be included via the
+`constraint.core/desc` function:
+
+```clojure
+(json-schema {:name (desc String "A person's full name")})
+```
+
+Produces:
+
+```json
+{
+    "$schema"   "http://json-schema.org/draft-04/schema#",
+    "type"      "object",
+    "required": ["name"],
+    "additionalProperties": false,
+    "properties": {
+        "name": {"type": "string", "doc": "A person's full name"},
+    }
+}
+```
+
+Because Constraint can validate more complex structures than JSON
+Schema can, the resulting JSON Schema may not include all possible
+validations, especially if custom validation types are used.
+
+
 ## License
 
 Copyright © 2014 Listora
