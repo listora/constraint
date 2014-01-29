@@ -115,7 +115,10 @@
     (merge
      {"type" "object"
       "additionalProperties"
-      (not (every? map-key? (keys definition)))
+      (let [ks (keys definition)]
+        (if (some many? ks)
+          (json-schema* (val (first (filter (comp many? key) definition))))
+          false))
       "properties"
       (into {} (for [[k v] definition :when (map-key? k)]
                  [(name (constraint k)) (json-schema* v)]))}

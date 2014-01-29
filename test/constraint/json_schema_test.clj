@@ -42,4 +42,8 @@
     (is (= (json-schema* {(? :foo) String})
            {"type" "object"
             "properties" {"foo" {"type" "string"}}
-            "additionalProperties" false}))))
+            "additionalProperties" false}))
+    (is (= (json-schema* {(& String) Number})
+           {"type" "object"
+            "properties" {}
+            "additionalProperties" {"type" "number"}}))))
