@@ -1,7 +1,6 @@
 (ns constraint.validate
   "Validate a data structure against a constraint."
-  (:require constraint.core
-            [constraint.internal.parse :refer [split-vector]] ))
+  (:require [constraint.core :refer (many? optional?)]))
 
 (defprotocol Validate
   (validate* [definition data]))
@@ -66,12 +65,6 @@
   (validate* [definition data]
     (if-not (instance? definition data)
       [(invalid-type definition (type data))])))
-
-(defn- many? [x]
-  (instance? constraint.core.Many x))
-
-(defn- optional? [x]
-  (instance? constraint.core.Optional x))
 
 (defn- validate-seq [def data]
   (let [type-error (invalid-type def (mapv type data))]

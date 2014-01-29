@@ -33,6 +33,9 @@
 (defmethod print-method Optional [^Optional opt ^java.io.Writer w]
   (.write w (str "(? " (pr-str (.constraint opt)) ")")))
 
+(defn optional? [x]
+  (instance? constraint.core.Optional x))
+
 (deftype Many [constraint])
 
 (defn &
@@ -42,6 +45,9 @@
 
 (defmethod print-method Many [^Many many ^java.io.Writer w]
   (.write w (str "(& " (pr-str (.constraint many)) ")")))
+
+(defn many? [x]
+  (instance? constraint.core.Many x))
 
 (deftype SizeBounds [min max])
 

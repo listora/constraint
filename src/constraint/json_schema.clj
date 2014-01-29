@@ -1,6 +1,5 @@
 (ns constraint.json-schema
-  (:require constraint.core
-            [constraint.internal.parse :refer [split-vector]]))
+  (:require [constraint.core :refer (many? optional?)]))
 
 (defprotocol JsonSchema
   (json-schema* [definition]))
@@ -46,17 +45,32 @@
               java.util.Map "object"
               Iterable      "array")}))
 
+(defn- single? [x]
+  (not (or (many? x) (optional? x))))
+
+(defn- constraint [x]
+  (if (single? x) x (.constraint x)))
+
 (extend-type clojure.lang.IPersistentVector
   JsonSchema
   (json-schema* [definition]
-    (let [[items add-items] (split-vector definition)]
-      (if (empty? items)
-        {"type" "array", "items" (json-schema* add-items)}
-        {"type" "array"
-         "items" (mapv json-schema* items)
-         "additionalItems" (if (empty? add-items)
-                             false
-                             (json-schema* add-items))}))))
+    (cond
+     (and (= (count definition) 1) (many? (first definition)))
+     {"type" "array"
+      "items" (json-schema* (constraint definition))}
+
+     (every? single? definition)
+     {"type" "array"
+      "items" (mapv json-schema* (constraint definition))}
+
+     (and (every? single? (butlast definition)) (many? (last definition)))
+     {"type" "array"
+      "items" (vec (map json-schema* (butlast definition)))
+      "additionalItems" (json-schema* (constraint (last definition)))}
+
+     :else
+     {"type" "array"
+      "items" {"oneOf" (vec (set (map (comp json-schema* constraint) definition)))}})))
 
 (extend-type clojure.lang.IPersistentMap
   JsonSchema
