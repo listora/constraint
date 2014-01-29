@@ -25,6 +25,9 @@
     (is (= (json-schema* (U :no :yes)) {"enum" ["no" "yes"]}))
     (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]})))
 
+  (testing "patterns"
+    (is (= (json-schema* #"a+") {"type" "string", "pattern" "a+"})))
+
   (testing "vectors"
     (is (= (json-schema* [String])
            {"type" "array", "items" [{"type" "string"}]}))
