@@ -84,7 +84,7 @@
     (cond
      (and (= (count definition) 1) (many? (first definition)))
      {"type" "array"
-      "items" (json-schema* (constraint definition))}
+      "items" (json-schema* (constraint (first definition)))}
 
      (every? single? definition)
      {"type" "array"
