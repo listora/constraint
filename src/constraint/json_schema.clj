@@ -128,7 +128,7 @@
 (extend-type java.util.regex.Pattern
   JsonSchema
   (json-schema* [definition]
-    {"pattern" (str definition)}))
+    {"type" "string", "pattern" (str definition)}))
 
 (extend-protocol JsonSchema
   nil
