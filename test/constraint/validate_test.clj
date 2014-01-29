@@ -22,6 +22,10 @@
       (is (empty? (validate Any "foo")))
       (is (empty? (validate Any 10)))
       (is (empty? (validate Any nil)))))
+
+  (testing "descriptions"
+    (is (empty? (validate (desc :x "something") :x)))
+    (is (not (empty? (validate (desc :x "something") :y)))))
   
   (testing "values"
     (testing "strings"

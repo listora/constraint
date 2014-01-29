@@ -14,6 +14,11 @@
   JsonSchema
   (json-schema* [_] {}))
 
+(extend-type constraint.core.Description
+  JsonSchema
+  (json-schema* [definition]
+    (assoc (json-schema* (.constraint definition)) "doc" (.doc definition))))
+
 (defn- enum? [x]
   (and (map? x) (contains? x "enum") (= (count x) 1)))
 

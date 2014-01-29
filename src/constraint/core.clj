@@ -7,6 +7,16 @@
   "A constraint that matches any data."
   (AnyType.))
 
+(deftype Description [constraint doc])
+
+(defn desc
+  "Add a description to a constraint."
+  [constraint doc-string]
+  (Description. constraint doc-string))
+
+(defmethod print-method Description [^Description d ^java.io.Writer w]
+  (.write w (pr-str (.constraint d))))
+
 (deftype Union [constraints])
 
 (defn U

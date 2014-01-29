@@ -21,6 +21,15 @@
   (testing "any"
     (is (= (json-schema* Any) {})))
 
+  (testing "descriptions"
+    (is (= (json-schema* (desc String "Username"))
+           {"type" "string", "doc" "Username"}))
+    (is (= (json-schema* {:name (-> String (desc "User's name"))})
+           {"type" "object"
+            "required" ["name"]
+            "additionalProperties" false
+            "properties" {"name" {"type" "string", "doc" "User's name"}}})))
+
   (testing "patterns"
     (is (= (json-schema* #"a+") {"type" "string", "pattern" "a+"})))
 

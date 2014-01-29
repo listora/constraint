@@ -30,6 +30,10 @@
   Validate
   (validate* [_ _] '()))
 
+(extend-type constraint.core.Description
+  Validate
+  (validate* [definition data] (validate* (.constraint definition) data)))
+
 (extend-type constraint.core.Union
   Validate
   (validate* [definition data]
