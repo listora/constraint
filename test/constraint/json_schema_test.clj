@@ -18,6 +18,9 @@
     (is (= (json-schema* Number)  {"type" "number"}))
     (is (= (json-schema* Boolean) {"type" "boolean"})))
 
+  (testing "any"
+    (is (= (json-schema* Any) {})))
+
   (testing "enums"
     (is (= (json-schema* (U :no :yes)) {"enum" ["no" "yes"]}))
     (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]})))
