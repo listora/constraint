@@ -20,7 +20,7 @@
 (defn- merge-enums [schemas]
   (if (some enum? schemas)
     (concat (remove enum? schemas)
-            [{"enum" (->> schemas (filter enum?) (mapcat #(get % "enum")) set vec)}])
+            [{"enum" (->> schemas (filter enum?) (mapcat #(get % "enum")) set sort vec)}])
     schemas))
 
 (extend-type constraint.core.Union
