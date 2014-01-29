@@ -14,10 +14,22 @@
   JsonSchema
   (json-schema* [_] {}))
 
+(defn- enum? [x]
+  (and (map? x) (contains? x "enum") (= (count x) 1)))
+
+(defn- merge-enums [schemas]
+  (if (some enum? schemas)
+    (concat (remove enum? schemas)
+            [{"enum" (->> schemas (filter enum?) (mapcat #(get % "enum")) set vec)}])
+    schemas))
+
 (extend-type constraint.core.Union
   JsonSchema
   (json-schema* [definition]
-    {"oneOf" (mapv json-schema* (.constraints definition))}))
+    (let [schemas (merge-enums (mapv json-schema* (.constraints definition)))]
+      (if (> (count schemas) 1)
+        {"oneOf" (vec schemas)}
+        (first schemas)))))
 
 (extend-type constraint.core.Intersection
   JsonSchema
@@ -96,5 +108,9 @@
 (extend-protocol JsonSchema
   nil
   (json-schema* [_] {"enum" [nil]})
+  clojure.lang.Keyword
+  (json-schema* [value] {"enum" [(name value)]})
+  clojure.lang.Symbol
+  (json-schema* [value] {"enum" [(name value)]})
   Object
   (json-schema* [value] {"enum" [value]}))
