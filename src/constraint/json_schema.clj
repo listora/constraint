@@ -43,10 +43,22 @@
 (defn- merge-interactions [schemas]
   (reduce assoc-in-available [] (set (apply concat schemas))))
 
+(defn- move [m k1 k2]
+  (if (contains? m k1)
+    (-> m (dissoc k1) (assoc k2 (m k1)))
+    m))
+
+(defn- correct-size-bounds [schema]
+  (if (= (schema "type") "string")
+    (-> schema (move "maxItems" "maxLength") (move "minItems" "minLength"))
+    schema))
+
 (extend-type constraint.core.Intersection
   JsonSchema
   (json-schema* [definition]
-    (let [schemas (merge-interactions (mapv json-schema* (.constraints definition)))]
+    (let [schemas (->> (map json-schema* (.constraints definition))
+                       (merge-interactions)
+                       (map correct-size-bounds))]
       (if (> (count schemas) 1)
         {"allOf" (vec schemas)}
         (first schemas)))))
