@@ -62,4 +62,14 @@
 
   (testing "enums"
     (is (= (json-schema* (U :no :yes)) {"enum" ["no" "yes"]}))
-    (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]}))))
+    (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]})))
+
+  (testing "size bounds"
+    (is (= (json-schema* (I String (size 5)))
+           {"type" "string", "maxLength" 5}))
+    (is (= (json-schema* (I String (size 1 5)))
+           {"type" "string", "minLength" 1, "maxLength" 5}))
+    (is (= (json-schema* (I [(& Any)] (size 3)))
+           {"type" "array", "items" {}, "maxItems" 3}))
+    (is (= (json-schema* (I [(& Any)] (size 1 3)))
+           {"type" "array", "items" {}, "minItems" 1, "maxItems" 3}))))
