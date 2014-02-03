@@ -38,8 +38,8 @@
   [f form]
   (postwalk* form f))
 
-(defn coercion
-  "Apply coercions to a constraint based on a map of rules."
+(defn add-coercions
+  "Add coercions to a constraint based on a map of rules."
   [constraint rules]
   (postwalk (fn [x] (rules x x)) constraint))
 
@@ -78,6 +78,6 @@
     :validate #(re-matches date-time-pattern %)
     :coerce   #(.getTime (javax.xml.bind.DatatypeConverter/parseDateTime %))))
 
-(def json
+(def json-rules
   {java.util.UUID string->uuid
    java.util.Date string->date})
