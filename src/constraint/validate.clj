@@ -52,7 +52,7 @@
       (if-not (some empty? errors)
         [{:error    :no-valid-constraint
           :failures (apply concat errors)}])))
-  Walk
+  WalkData
   (walk-data* [definition f data]
     (let [def (first (filter #(valid? % data) (.constraints definition)))]
       (f definition (walk-data* def f data)))))
@@ -61,7 +61,7 @@
   Validate
   (validate* [definition data]
     (vec (set (mapcat #(validate % data) (.constraints definition)))))
-  Walk
+  WalkData
   (walk-data* [definition f data]
     (f definition (reduce #(walk-data* %2 f %1) data (.constraints definition)))))
 
