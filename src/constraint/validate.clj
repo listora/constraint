@@ -5,6 +5,9 @@
 (defprotocol Validate
   (validate* [definition data]))
 
+(defprotocol Traverse
+  (traverse [definition data]))
+
 (def messages
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
@@ -117,37 +120,43 @@
     (valid? def data)
     (valid? (.constraint def) data)))
 
-(defn- validate-map [def data]
+(defn- walk-map [def data]
   (let [type-error (invalid-type def (map-vals data type))]
-    (letfn [(validate-map* [def data]
+    (letfn [(walk-map* [def data]
               (cond
                (and (empty? def) (not-empty data))
-               [type-error]
+               [nil [type-error]]
 
                (and (empty? data) (some mandatory? (keys def)))
-               [type-error]
+               [nil [type-error]]
 
                (not-empty data)
                (let [[dk dv] (first data)
                      data    (dissoc data dk)
                      matches (filter #(valid-key? (key %) dk) def)
-                     errors  (for [[k v] matches]
-                               (let [def (if (many? k) def (dissoc def k))]
-                                 (concat (validate* v dv)
-                                         (validate-map* def data))))]
+                     results (for [[k v] matches]
+                               (let [definition     (if (many? k) def (dissoc def k))
+                                     [pairs errors] (walk-map* definition data)]
+                                 [(list* [k dk] [v dv] pairs)
+                                  (concat (validate* v dv) errors)]))]
                  (if (empty? matches)
-                   [type-error]
-                   (first (sort-by count errors))))))]
-      (validate-map* def data))))
+                   [nil [type-error]]
+                   (first (sort-by (comp count second) results))))))]
+      (walk-map* def data))))
 
 (extend-type clojure.lang.IPersistentMap
   Validate
   (validate* [definition data]
     (if (map? data)
-      (validate-map definition data)
+      (second (walk-map definition data))
       [{:error    :invalid-type
         :expected clojure.lang.IPersistentMap
-        :found    (type data)}])))
+        :found    (type data)}]))
+  Traverse
+  (traverse [definition data]
+    (if (map? data)
+      (mapcat (fn [[def data]] (traverse def data))
+              (first (walk-map definition data))))))
 
 (extend-type java.util.regex.Pattern
   Validate
@@ -171,3 +180,9 @@
   (validate* [def data] (validate-literal def data))
   Object
   (validate* [def data] (validate-literal def data)))
+
+(extend-protocol Traverse
+  nil
+  (traverse [definition data] [[definition data]])
+  Object
+  (traverse [definition data] [[definition data]]))
