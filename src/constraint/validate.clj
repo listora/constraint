@@ -5,8 +5,8 @@
 (defprotocol Validate
   (validate* [definition data]))
 
-(defprotocol Traverse
-  (traverse [definition data]))
+(defprotocol Walk
+  (postwalk* [definition f data]))
 
 (def messages
   {:invalid-type "data type does not match definition"
@@ -15,6 +15,14 @@
    :size-out-of-bounds "data size is out of bounds"
    :pattern-not-matching "data does not match regular expression in definition"
    :failed-coercion "could not coerce data to expected format"})
+
+(defn postwalk
+  "Performs a depth-first, post-order traversal of a data structure, matched
+  with the corresponding form in the constraint definition. Expects a function
+  that takes two arguments, a constraint definition and a data structure, and
+  returns the transformed data structure."
+  [f definition data]
+  (postwalk* definition f data))
 
 (defn validate
   "Validate a data structure based on a constraint. If the data structure is
@@ -108,10 +116,12 @@
       [{:error    :invalid-type
         :expected clojure.lang.Sequential
         :found    (type data)}]))
-  Traverse
-  (traverse [definition data]
+  Walk
+  (postwalk* [definition f data]
     (if (sequential? data)
-      (first (walk-seq definition data)))))
+      (let [pairs (first (walk-seq definition data))]
+        (f definition (mapv (fn [[def data]] (postwalk* def f data)) pairs)))
+      data)))
 
 (defn- map-vals [m f]
   (into {} (for [[k v] m] [k (f v)])))
@@ -146,7 +156,7 @@
                      results (for [[k v] matches]
                                (let [definition     (if (many? k) def (dissoc def k))
                                      [pairs errors] (walk-map* definition data)]
-                                 [(list* [(some-constraint k) dk] [v dv] pairs)
+                                 [(cons [[(some-constraint k) v] [dk dv]] pairs)
                                   (concat (validate* v dv) errors)]))]
                  (if (empty? matches)
                    [nil [type-error]]
@@ -161,11 +171,15 @@
       [{:error    :invalid-type
         :expected clojure.lang.IPersistentMap
         :found    (type data)}]))
-  Traverse
-  (traverse [definition data]
+  Walk
+  (postwalk* [definition f data]
     (if (map? data)
-      (mapcat (fn [[def data]] (traverse def data))
-              (first (walk-map definition data))))))
+      (let [pairs (first (walk-map definition data))]
+        (->> (for [[[k v] [dk dv]] pairs]
+               (f [k v] [(postwalk* k f dk) (postwalk* v f dv)]))
+             (into {})
+             (f definition)))
+      data)))
 
 (extend-type java.util.regex.Pattern
   Validate
@@ -190,8 +204,8 @@
   Object
   (validate* [def data] (validate-literal def data)))
 
-(extend-protocol Traverse
+(extend-protocol Walk
   nil
-  (traverse [definition data] [[definition data]])
+  (postwalk* [definition f data] (f definition data))
   Object
-  (traverse [definition data] [[definition data]]))
+  (postwalk* [definition f data] (f definition data)))
