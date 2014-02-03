@@ -74,40 +74,44 @@
     (if-not (instance? definition data)
       [(invalid-type definition (type data))])))
 
-(defn- validate-seq [def data]
+(defn- walk-seq [def data]
   (let [type-error (invalid-type def (mapv type data))]
-    (loop [def def, data data, errors '()]
-      (cond
-       (empty? def)
-       (if (seq data)
-         (cons type-error errors)
-         errors)
+    (loop [def def, data data, pairs [], errors '()]
+      (let [def1 (first def), data1 (first data)]
+        (cond
+         (empty? def)
+         [pairs (if (seq data) (cons type-error errors) errors)]
 
-       (many? (first def))
-       (if (valid? (.constraint (first def)) (first data))
-         (recur def (rest data) errors)
-         (recur (rest def) data errors))
+         (many? (first def))
+         (if (valid? (.constraint def1) data1)
+           (recur def (rest data) (conj pairs [(.constraint def1) data1]) errors)
+           (recur (rest def) data pairs errors))
 
-       (optional? (first def))
-       (if (valid? (.constraint (first def)) (first data))
-         (recur (rest def) (rest data) errors)
-         (recur (rest def) data errors))
+         (optional? (first def))
+         (if (valid? (.constraint def1) data1)
+           (recur (rest def) (rest data) (conj pairs [(.constraint def1) data1]) errors)
+           (recur (rest def) data pairs errors))
 
-       (empty? data)
-       (cons type-error errors)
+         (empty? data)
+         [pairs (cons type-error errors)]
 
-       :else
-       (let [item-errors (validate* (first def) (first data))]
-         (recur (rest def) (rest data) (concat errors item-errors)))))))
+         :else
+         (let [errors (concat errors (validate* def1 data1))
+               pairs  (conj pairs [def1 data1])]
+           (recur (rest def) (rest data) pairs errors)))))))
 
 (extend-type clojure.lang.IPersistentVector
   Validate
   (validate* [definition data]
     (if (sequential? data)
-      (validate-seq definition data)
+      (second (walk-seq definition data))
       [{:error    :invalid-type
         :expected clojure.lang.Sequential
-        :found    (type data)}])))
+        :found    (type data)}]))
+  Traverse
+  (traverse [definition data]
+    (if (sequential? data)
+      (first (walk-seq definition data)))))
 
 (defn- map-vals [m f]
   (into {} (for [[k v] m] [k (f v)])))
@@ -119,6 +123,11 @@
   (if (mandatory? def)
     (valid? def data)
     (valid? (.constraint def) data)))
+
+(defn- some-constraint [x]
+  (if (or (many? x) (optional? x))
+    (.constraint x)
+    x))
 
 (defn- walk-map [def data]
   (let [type-error (invalid-type def (map-vals data type))]
@@ -137,7 +146,7 @@
                      results (for [[k v] matches]
                                (let [definition     (if (many? k) def (dissoc def k))
                                      [pairs errors] (walk-map* definition data)]
-                                 [(list* [k dk] [v dv] pairs)
+                                 [(list* [(some-constraint k) dk] [v dv] pairs)
                                   (concat (validate* v dv) errors)]))]
                  (if (empty? matches)
                    [nil [type-error]]
