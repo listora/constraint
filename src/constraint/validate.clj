@@ -10,7 +10,8 @@
    :invalid-value "data value does not match definition"
    :no-valid-constraint "no valid constraint in union"
    :size-out-of-bounds "data size is out of bounds"
-   :pattern-not-matching "data does not match regular expression in definition"})
+   :pattern-not-matching "data does not match regular expression in definition"
+   :failed-coercion "could not coerce data to expected format"})
 
 (defn validate
   "Validate a data structure based on a constraint. If the data structure is
