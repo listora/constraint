@@ -5,18 +5,11 @@
   (coerce [coercion data]))
 
 (defprotocol Coercion
-  (coercion [constraint mapping]))
-
-(def noop
-  (reify
-    Coerce
-    (coerce [_ data] data)
-    Validate
-    (validate* [_ _] '())))
+  (some-coercion [constraint mapping]))
 
 (extend-type Class
   Coercion
-  (coercion [type mapping] (mapping type)))
+  (some-coercion [type mapping] (mapping type)))
 
 (extend-type Object
   Coercion

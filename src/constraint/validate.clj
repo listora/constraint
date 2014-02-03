@@ -52,12 +52,19 @@
     (let [errors (map #(validate % data) (.constraints definition))]
       (if-not (some empty? errors)
         [{:error    :no-valid-constraint
-          :failures (apply concat errors)}])))) 
+          :failures (apply concat errors)}])))
+  Walk
+  (postwalk* [definition f data]
+    (let [def (first (filter #(valid? % data) (.constraints definition)))]
+      (f definition (postwalk* def f data))))) 
 
 (extend-type constraint.core.Intersection
   Validate
   (validate* [definition data]
-    (vec (set (mapcat #(validate % data) (.constraints definition))))))
+    (vec (set (mapcat #(validate % data) (.constraints definition)))))
+  Walk
+  (postwalk* [definition f data]
+    (f definition (reduce #(postwalk* %2 f %1) data (.constraints definition)))))
 
 (extend-type constraint.core.SizeBounds
   Validate
