@@ -169,6 +169,30 @@ In maps, the optional constraint must be placed on the key:
 Outside of a collection, this form will cause a syntax exception.
 
 
+## Validation
+
+If you just want to know whether a constraint is valid or not, there
+is the `valid?` function:
+
+```clojure
+(valid? String "foo")  ;; => true
+```
+
+But more often it's useful to get a list of error messages:
+
+```clojure
+(validate String 1)
+=> ({:message  "data type does not match definition"
+     :error    :invalid-type
+     :expected java.lang.String
+     :found    java.lang.Long})
+```
+
+Each error message will always contain an `:error` key that describes
+the type of error.
+
+
+
 ## JSON Schema
 
 Constraints can be serialized into [JSON Schema][1] for documentation
