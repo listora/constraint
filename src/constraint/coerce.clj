@@ -16,17 +16,21 @@
   (postwalk* [form f]))
 
 (extend-protocol Walk
-  constraint.core.Constraint
-  (postwalk* [c f] (postwalk* (constraint c) f))
   constraint.core.Union
   (postwalk* [u f] (apply U (map #(postwalk* % f) (.constraints u))))
   constraint.core.Intersection
   (postwalk* [i f] (apply I (map #(postwalk* % f) (.constraints i))))
+  constraint.core.Many
+  (postwalk* [m f] (& (postwalk* (constraint m) f)))
+  constraint.core.Optional
+  (postwalk* [o f] (? (postwalk* (constraint o) f)))
   clojure.lang.IPersistentVector
   (postwalk* [v f] (f (mapv #(postwalk* % f) v)))
   clojure.lang.IPersistentMap
   (postwalk* [m f]
     (f (into {} (for [[k v] m] (f [(postwalk* k f) (postwalk* v f)])))))
+  constraint.core.Constraint
+  (postwalk* [c f] (postwalk* (constraint c) f))
   Object
   (postwalk* [x f] (f x)))
 
