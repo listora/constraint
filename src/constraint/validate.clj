@@ -131,9 +131,6 @@
         (f definition (mapv (fn [[def data]] (walk-data* def f data)) pairs)))
       data)))
 
-(defn- map-vals [m f]
-  (into {} (for [[k v] m] [k (f v)])))
-
 (defn- mandatory? [x]
   (not (or (many? x) (optional? x))))
 
