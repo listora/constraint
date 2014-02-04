@@ -16,6 +16,8 @@
   (postwalk* [form f]))
 
 (extend-protocol Walk
+  constraint.core.Description
+  (postwalk* [d f] (postwalk* (.constraint d) f))
   constraint.core.Union
   (postwalk* [u f] (apply U (map #(postwalk* % f) (.constraints u))))
   constraint.core.Intersection
