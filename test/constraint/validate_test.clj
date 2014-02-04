@@ -92,10 +92,9 @@
       (is (empty? (validate [String Number] ["foo" 10]))))
     (testing "size"
       (is (= (validate [String Number] ["foo"])
-             [{:error :invalid-type
-               :message "data type does not match definition"
-               :expected [String Number]
-               :found [String]}])))
+             [{:error :missing-value
+               :message "unexpected end of list"
+               :missing Number}])))
     (testing "type"
       (is (= (validate [String Number] {"foo" 10})
              [{:error :invalid-type
@@ -128,9 +127,9 @@
       (is (empty? (validate {String Number} {"foo" 1}))))
     (testing "keys"
       (is (= (validate {:foo String} {:foo "bar" :baz "quz"})
-             [{:error :unwanted-keys
+             [{:error :unexpected-keys
                :message "key(s) in data could not be matched to definition"
-               :unwanted [:baz]}])))
+               :found [:baz]}])))
     (testing "type"
       (is (= (validate {:foo String} [:foo "bar"])
              [{:error :invalid-type

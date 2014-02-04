@@ -15,8 +15,10 @@
    :size-out-of-bounds "data size is out of bounds"
    :pattern-not-matching "data does not match regular expression in definition"
    :failed-coercion "could not coerce data to expected format"
-   :unwanted-keys "key(s) in data could not be matched to definition"
-   :missing-keys "mandatory key(s) in definition could not be found in data"})
+   :unexpected-keys "key(s) in data could not be matched to definition"
+   :missing-keys "mandatory key(s) in definition could not be found in data"
+   :unexpected-value "found additional values in list not in definition"
+   :missing-value "unexpected end of list"})
 
 (defn walk-data
   "Performs a depth-first, post-order traversal of a data structure matched
@@ -84,6 +86,9 @@
    :expected expected
    :found    found})
 
+(defn- mandatory? [x]
+  (not (or (many? x) (optional? x))))
+
 (extend-type Class
   Validate
   (validate* [definition data]
@@ -91,30 +96,34 @@
       [(invalid-type definition (type data))])))
 
 (defn- walk-seq [def data]
-  (let [type-error (invalid-type def (mapv type data))]
-    (loop [def def, data data, pairs [], errors '()]
-      (let [def1 (first def), data1 (first data)]
-        (cond
-         (empty? def)
-         [pairs (if (seq data) (cons type-error errors) errors)]
+  (loop [def def, data data, pairs [], errors '()]
+    (let [def1 (first def), data1 (first data)]
+      (cond
+       (empty? def)
+       [pairs (if (seq data)
+                (cons {:error :unexpected-value
+                       :found (first data)}
+                      errors)
+                errors)]
 
-         (many? (first def))
-         (if (valid? (constraint def1) data1)
-           (recur def (rest data) (conj pairs [(constraint def1) data1]) errors)
-           (recur (rest def) data pairs errors))
+       (many? (first def))
+       (if (valid? (constraint def1) data1)
+         (recur def (rest data) (conj pairs [(constraint def1) data1]) errors)
+         (recur (rest def) data pairs errors))
 
-         (optional? (first def))
-         (if (valid? (constraint def1) data1)
-           (recur (rest def) (rest data) (conj pairs [(constraint def1) data1]) errors)
-           (recur (rest def) data pairs errors))
+       (optional? (first def))
+       (if (valid? (constraint def1) data1)
+         (recur (rest def) (rest data) (conj pairs [(constraint def1) data1]) errors)
+         (recur (rest def) data pairs errors))
 
-         (empty? data)
-         [pairs (cons type-error errors)]
+       (empty? data)
+       [pairs (cons {:error   :missing-value
+                     :missing (first def)} errors)]
 
-         :else
-         (let [errors (concat errors (validate* def1 data1))
-               pairs  (conj pairs [def1 data1])]
-           (recur (rest def) (rest data) pairs errors)))))))
+       :else
+       (let [errors (concat errors (validate* def1 data1))
+             pairs  (conj pairs [def1 data1])]
+         (recur (rest def) (rest data) pairs errors))))))
 
 (extend-type clojure.lang.IPersistentVector
   Validate
@@ -131,14 +140,11 @@
         (f definition (mapv (fn [[def data]] (walk-data* def f data)) pairs)))
       data)))
 
-(defn- mandatory? [x]
-  (not (or (many? x) (optional? x))))
-
 (defn- walk-map [def data]
   (cond
    (and (empty? def) (not-empty data))
-   [nil [{:error :unwanted-keys
-          :unwanted (vec (keys data))}]]
+   [nil [{:error :unexpected-keys
+          :found (vec (keys data))}]]
 
    (and (empty? data) (some mandatory? (keys def)))
    [nil [{:error :missing-keys
@@ -154,7 +160,7 @@
                      [(cons [[(constraint k) v] [dk dv]] pairs)
                       (concat (validate* v dv) errors)]))]
      (if (empty? matches)
-       [nil [{:error :unwanted-keys, :unwanted [dk]}]]
+       [nil [{:error :unexpected-keys, :found [dk]}]]
        (first (sort-by (comp count second) results))))))
 
 (extend-type clojure.lang.IPersistentMap
