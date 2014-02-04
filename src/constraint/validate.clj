@@ -8,13 +8,15 @@
 (defprotocol WalkData
   (walk-data* [definition f data]))
 
-(def messages
+(def default-messages
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
    :no-valid-constraint "no valid constraint in union"
    :size-out-of-bounds "data size is out of bounds"
    :pattern-not-matching "data does not match regular expression in definition"
-   :failed-coercion "could not coerce data to expected format"})
+   :failed-coercion "could not coerce data to expected format"
+   :unwanted-keys "key(s) in data could not be matched to definition"
+   :missing-keys "mandatory key(s) in definition could not be found in data"})
 
 (defn walk-data
   "Performs a depth-first, post-order traversal of a data structure matched
@@ -29,7 +31,7 @@
   of errors is returned."
   [definition data]
   (for [error (validate* definition data)]
-    (assoc error :message (messages (:error error)))))
+    (assoc error :message (default-messages (:error error)))))
 
 (defn valid?
   "Return true if the data structure is valid according to the supplied
@@ -136,28 +138,27 @@
   (not (or (many? x) (optional? x))))
 
 (defn- walk-map [def data]
-  (let [type-error (invalid-type def (map-vals data type))]
-    (letfn [(walk-map* [def data]
-              (cond
-               (and (empty? def) (not-empty data))
-               [nil [type-error]]
+  (cond
+   (and (empty? def) (not-empty data))
+   [nil [{:error :unwanted-keys
+          :unwanted (vec (keys data))}]]
 
-               (and (empty? data) (some mandatory? (keys def)))
-               [nil [type-error]]
+   (and (empty? data) (some mandatory? (keys def)))
+   [nil [{:error :missing-keys
+          :missing (vec (filter mandatory? (keys def)))}]]
 
-               (not-empty data)
-               (let [[dk dv] (first data)
-                     data    (dissoc data dk)
-                     matches (filter #(valid? (constraint (key %)) dk) def)
-                     results (for [[k v] matches]
-                               (let [definition     (if (many? k) def (dissoc def k))
-                                     [pairs errors] (walk-map* definition data)]
-                                 [(cons [[(constraint k) v] [dk dv]] pairs)
-                                  (concat (validate* v dv) errors)]))]
-                 (if (empty? matches)
-                   [nil [type-error]]
-                   (first (sort-by (comp count second) results))))))]
-      (walk-map* def data))))
+   (not-empty data)
+   (let [[dk dv] (first data)
+         data    (dissoc data dk)
+         matches (filter #(valid? (constraint (key %)) dk) def)
+         results (for [[k v] matches]
+                   (let [definition     (if (many? k) def (dissoc def k))
+                         [pairs errors] (walk-map definition data)]
+                     [(cons [[(constraint k) v] [dk dv]] pairs)
+                      (concat (validate* v dv) errors)]))]
+     (if (empty? matches)
+       [nil [{:error :unwanted-keys, :unwanted [dk]}]]
+       (first (sort-by (comp count second) results))))))
 
 (extend-type clojure.lang.IPersistentMap
   Validate

@@ -128,10 +128,9 @@
       (is (empty? (validate {String Number} {"foo" 1}))))
     (testing "keys"
       (is (= (validate {:foo String} {:foo "bar" :baz "quz"})
-             [{:error :invalid-type
-               :message "data type does not match definition"
-               :expected {:foo String}
-               :found {:foo String :baz String}}])))
+             [{:error :unwanted-keys
+               :message "key(s) in data could not be matched to definition"
+               :unwanted [:baz]}])))
     (testing "type"
       (is (= (validate {:foo String} [:foo "bar"])
              [{:error :invalid-type
