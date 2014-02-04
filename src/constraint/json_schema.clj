@@ -1,5 +1,5 @@
 (ns constraint.json-schema
-  (:require [constraint.core :refer (many? optional?)]))
+  (:require [constraint.core :refer (many? optional? constraint)]))
 
 (defprotocol JsonSchema
   (json-schema* [definition]))
@@ -17,7 +17,7 @@
 (extend-type constraint.core.Description
   JsonSchema
   (json-schema* [definition]
-    (assoc (json-schema* (.constraint definition)) "doc" (.doc definition))))
+    (assoc (json-schema* (.inner definition)) "doc" (.doc definition))))
 
 (defn- enum? [x]
   (and (map? x) (contains? x "enum") (= (count x) 1)))
@@ -92,9 +92,6 @@
 (defn- single? [x]
   (not (or (many? x) (optional? x))))
 
-(defn- constraint [x]
-  (if (single? x) x (.constraint x)))
-
 (extend-type clojure.lang.IPersistentVector
   JsonSchema
   (json-schema* [definition]
@@ -117,7 +114,7 @@
       "items" {"oneOf" (vec (set (map (comp json-schema* constraint) definition)))}})))
 
 (defn- map-key? [x]
-  (let [x (if (optional? x) (.constraint x) x)]
+  (let [x (constraint x)]
     (or (string? x) (symbol? x) (keyword? x))))
 
 (defn- required-keys [definition]

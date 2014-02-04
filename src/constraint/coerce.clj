@@ -1,6 +1,6 @@
 (ns constraint.coerce
   (:require [constraint.validate :refer (Validate validate* walk-data)]
-            [constraint.core :refer (U I & ?)]))
+            [constraint.core :refer (U I & ? constraint)]))
 
 (defprotocol Coerce
   (coerce* [definition data]))
@@ -16,16 +16,12 @@
   (postwalk* [form f]))
 
 (extend-protocol Walk
-  constraint.core.Description
-  (postwalk* [d f] (postwalk* (.constraint d) f))
+  constraint.core.Constraint
+  (postwalk* [c f] (postwalk* (constraint c) f))
   constraint.core.Union
   (postwalk* [u f] (apply U (map #(postwalk* % f) (.constraints u))))
   constraint.core.Intersection
   (postwalk* [i f] (apply I (map #(postwalk* % f) (.constraints i))))
-  constraint.core.Many
-  (postwalk* [m f] (& (postwalk* (.constraint m) f)))
-  constraint.core.Optional
-  (postwalk* [o f] (? (postwalk* (.constraint o) f)))
   clojure.lang.IPersistentVector
   (postwalk* [v f] (f (mapv #(postwalk* % f) v)))
   clojure.lang.IPersistentMap

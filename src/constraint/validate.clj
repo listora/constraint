@@ -1,6 +1,6 @@
 (ns constraint.validate
   "Validate a data structure against a constraint."
-  (:require [constraint.core :refer (many? optional?)]))
+  (:require [constraint.core :refer (many? optional? constraint)]))
 
 (defprotocol Validate
   (validate* [definition data]))
@@ -43,7 +43,7 @@
 
 (extend-type constraint.core.Description
   Validate
-  (validate* [definition data] (validate* (.constraint definition) data)))
+  (validate* [definition data] (validate* (constraint definition) data)))
 
 (extend-type constraint.core.Union
   Validate
@@ -97,13 +97,13 @@
          [pairs (if (seq data) (cons type-error errors) errors)]
 
          (many? (first def))
-         (if (valid? (.constraint def1) data1)
-           (recur def (rest data) (conj pairs [(.constraint def1) data1]) errors)
+         (if (valid? (constraint def1) data1)
+           (recur def (rest data) (conj pairs [(constraint def1) data1]) errors)
            (recur (rest def) data pairs errors))
 
          (optional? (first def))
-         (if (valid? (.constraint def1) data1)
-           (recur (rest def) (rest data) (conj pairs [(.constraint def1) data1]) errors)
+         (if (valid? (constraint def1) data1)
+           (recur (rest def) (rest data) (conj pairs [(constraint def1) data1]) errors)
            (recur (rest def) data pairs errors))
 
          (empty? data)
@@ -135,16 +135,6 @@
 (defn- mandatory? [x]
   (not (or (many? x) (optional? x))))
 
-(defn- valid-key? [def data]
-  (if (mandatory? def)
-    (valid? def data)
-    (valid? (.constraint def) data)))
-
-(defn- some-constraint [x]
-  (if (or (many? x) (optional? x))
-    (.constraint x)
-    x))
-
 (defn- walk-map [def data]
   (let [type-error (invalid-type def (map-vals data type))]
     (letfn [(walk-map* [def data]
@@ -158,11 +148,11 @@
                (not-empty data)
                (let [[dk dv] (first data)
                      data    (dissoc data dk)
-                     matches (filter #(valid-key? (key %) dk) def)
+                     matches (filter #(valid? (constraint (key %)) dk) def)
                      results (for [[k v] matches]
                                (let [definition     (if (many? k) def (dissoc def k))
                                      [pairs errors] (walk-map* definition data)]
-                                 [(cons [[(some-constraint k) v] [dk dv]] pairs)
+                                 [(cons [[(constraint k) v] [dk dv]] pairs)
                                   (concat (validate* v dv) errors)]))]
                  (if (empty? matches)
                    [nil [type-error]]
