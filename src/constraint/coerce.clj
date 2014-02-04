@@ -40,10 +40,12 @@
   [f form]
   (postwalk* form f))
 
-(defn add-coercions
-  "Add coercions to a constraint based on a map of rules."
-  [constraint rules]
-  (postwalk (fn [x] (rules x x)) constraint))
+(defn transform
+  "Transform a constraint based on a series of rules. Rules may be represented
+  as a map or a function. In both cases, rules should map an existing value to
+  a new value."
+  [constraint & rules]
+  (postwalk #(reduce (fn [x r] (if (map? r) (r x x) (r x))) % rules) constraint))
 
 (defn failed-coercion [type data]
   {:error    :failed-coercion
