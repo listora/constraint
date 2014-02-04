@@ -65,23 +65,3 @@
       (or (seq (validate* in-type data))
           (if-not (valid-fn data)
             [(failed-coercion out-type data)])))))
-
-(def uuid-pattern
-  #"[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}")
-
-(def string->uuid
-  (make-coercion [String java.util.UUID]
-    :validate #(re-matches uuid-pattern %)
-    :coerce   #(java.util.UUID/fromString %)))
-
-(def date-time-pattern
-  #"^\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d([+-][0-2]\d:[0-5]\d|Z)$")
-
-(def string->date
-  (make-coercion [String java.util.Date]
-    :validate #(re-matches date-time-pattern %)
-    :coerce   #(.getTime (javax.xml.bind.DatatypeConverter/parseDateTime %))))
-
-(def json-rules
-  {java.util.UUID string->uuid
-   java.util.Date string->date})
