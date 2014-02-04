@@ -18,6 +18,6 @@
     :coerce   #(.getTime (javax.xml.bind.DatatypeConverter/parseDateTime %))))
 
 (def type-coercions
+  "A set of standard type coercion rules for data parsed from JSON."
   {java.util.UUID string->uuid
    java.util.Date string->date})
-
