@@ -1,6 +1,7 @@
 (ns constraint.coerce
-  (:require [constraint.validate :refer (Validate validate* walk-data)]
-            [constraint.core :refer (U I & ? constraint)]))
+  (:require [constraint.core :refer (U I & ? constraint)]
+            [constraint.validate :refer (Validate validate* walk-data)]
+            [constraint.json-schema :refer (JsonSchema)]))
 
 (defprotocol Coerce
   (coerce* [definition data]))
@@ -47,21 +48,20 @@
   [constraint & rules]
   (postwalk #(reduce (fn [x r] (if (map? r) (r x x) (r x))) % rules) constraint))
 
-(defn failed-coercion [type data]
-  {:error    :failed-coercion
-   :coercion type
-   :found    data})
-
 (defn make-coercion
   "Construct a coercion that maps data of one type to another type. Takes a
   :validate predicate to determine if the data can be coerced, and a :coerce
   function, which returns the coerced value."
-  [[in-type out-type] & {valid-fn :validate, coerce-fn :coerce}]
+  [[in-type out-type] & {:keys [validate coerce schema]}]
   (reify
     Coerce
-    (coerce* [_ data] (coerce-fn data))
+    (coerce* [_ data] (coerce data))
+    JsonSchema
+    (json-schema* [_] schema)
     Validate
     (validate* [_ data]
       (or (seq (validate* in-type data))
-          (if-not (valid-fn data)
-            [(failed-coercion out-type data)])))))
+          (if-not (validate data)
+            [{:error    :failed-coercion
+              :coercion out-type
+              :found    data}])))))
