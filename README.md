@@ -6,6 +6,13 @@ A Clojure library for describing, validating and coercing user input.
 
 **This library is still in very early development.**
 
+#### Leiningen dependency
+
+```clojure
+[listora/constraint "0.1.0-SNAPSHOT"]
+```
+
+
 ## Introduction
 
 Constraint draws upon ideas from Prismatic's [Schema][1] library and the
