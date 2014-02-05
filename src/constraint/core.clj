@@ -34,6 +34,9 @@
   [& constraints]
   (Union. constraints))
 
+(defn union? [x]
+  (instance? constraint.core.Union x))
+
 (deftype Intersection [constraints])
 
 (defn I
@@ -41,6 +44,9 @@
   constraint is valid if and only if all the containing constraints are valid."
   [& constraints]
   (Intersection. constraints))
+
+(defn intersection? [x]
+  (instance? constraint.core.Intersection x))
 
 (deftype Optional [inner]
   Constraint
