@@ -119,7 +119,7 @@
       (is (not (empty? (validate [(? String) Number] []))))
       (is (not (empty? (validate [(? String) Number] ["foo"]))))
       (is (not (empty? (validate [(? String) Number] ["foo" "bar" 3])))))
-    (testing "indexes"
+    (testing "error keys"
       (is (= (validate [String] ["foo" "bar"])
              [{:error :unexpected-value
                :keys [1]
@@ -152,12 +152,14 @@
       (is (= (validate {String Number} {"foo" "bar"})
              [{:error :invalid-type
                :message "data type does not match definition"
+               :keys ["foo"]
                :expected Number
                :found String}])))
     (testing "value types"
       (is (= (validate {:foo String} {:foo 10})
              [{:error :invalid-type
                :message "data type does not match definition"
+               :keys [:foo]
                :expected String
                :found Long}])))
     (testing "optional keys"
@@ -172,7 +174,14 @@
       (is (empty? (validate {(& String) Number} {"foo" 1, "bar" 2})))
       (is (not (empty? (validate {(& String) Number} {"foo" 1, :bar 2}))))
       (is (empty? (validate {"foo" String, (& String) Number} {"foo" "bar", "baz" 3})))
-      (is (not (empty? (validate {"foo" String, (& String) Number} {"foo" 4, "baz" 5})))))))
+      (is (not (empty? (validate {"foo" String, (& String) Number} {"foo" 4, "baz" 5})))))
+    (testing "error keys"
+      (is (= (validate {:foo {:bar [String]}} {:foo {:bar [5]}})
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :keys [:foo :bar 0]
+               :expected String
+               :found Long}])))))
 
 (deftest test-valid?
   (is (true? (valid? String "foo")))

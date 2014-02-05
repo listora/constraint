@@ -95,6 +95,9 @@
 (defn- mandatory? [x]
   (not (or (many? x) (optional? x))))
 
+(defn- add-key [error key]
+  (update-in error [:keys] conj key))
+
 (defn- unexpected-value [index value]
   {:keys  (list index)
    :error :unexpected-value
@@ -103,9 +106,6 @@
 (defn- missing-value [missing]
   {:error   :missing-value
    :missing missing})
-
-(defn- add-key [error key]
-  (update-in error [:keys] conj key))
 
 (defn- walk-seq [def data]
   (loop [def def, data data, pairs [], errors '(), index 0]
@@ -171,7 +171,9 @@
                    (let [definition     (if (many? k) def (dissoc def k))
                          [pairs errors] (walk-map definition data)]
                      [(cons [[(constraint k) v] [dk dv]] pairs)
-                      (concat (validate* v dv) errors)]))]
+                      (->> (validate* v dv)
+                           (map #(add-key % dk))
+                           (concat errors))]))]
      (if (empty? matches)
        [nil [{:error :unexpected-keys, :found [dk]}]]
        (first (sort-by (comp count second) results))))))
