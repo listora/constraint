@@ -86,44 +86,57 @@
    :expected expected
    :found    found})
 
-(defn- mandatory? [x]
-  (not (or (many? x) (optional? x))))
-
 (extend-type Class
   Validate
   (validate* [definition data]
     (if-not (instance? definition data)
       [(invalid-type definition (type data))])))
 
+(defn- mandatory? [x]
+  (not (or (many? x) (optional? x))))
+
+(defn- unexpected-value [index value]
+  {:keys  (list index)
+   :error :unexpected-value
+   :found value})
+
+(defn- missing-value [missing]
+  {:error   :missing-value
+   :missing missing})
+
+(defn- add-key [error key]
+  (update-in error [:keys] conj key))
+
 (defn- walk-seq [def data]
-  (loop [def def, data data, pairs [], errors '()]
+  (loop [def def, data data, pairs [], errors '(), index 0]
     (let [def1 (first def), data1 (first data)]
       (cond
        (empty? def)
        [pairs (if (seq data)
-                (cons {:error :unexpected-value
-                       :found (first data)}
-                      errors)
+                (cons (unexpected-value index (first data)) errors)
                 errors)]
 
        (many? (first def))
-       (if (valid? (constraint def1) data1)
-         (recur def (rest data) (conj pairs [(constraint def1) data1]) errors)
-         (recur (rest def) data pairs errors))
+       (if-not (valid? (constraint def1) data1)
+         (recur (rest def) data pairs errors index)
+         (let [pairs (conj pairs [(constraint def1) data1])]
+           (recur def (rest data) pairs errors (inc index))))
 
        (optional? (first def))
-       (if (valid? (constraint def1) data1)
-         (recur (rest def) (rest data) (conj pairs [(constraint def1) data1]) errors)
-         (recur (rest def) data pairs errors))
+       (if-not (valid? (constraint def1) data1)
+         (recur (rest def) data pairs errors index)
+         (let [pairs (conj pairs [(constraint def1) data1])]
+           (recur (rest def) (rest data) pairs errors (inc index))))
 
        (empty? data)
-       [pairs (cons {:error   :missing-value
-                     :missing (first def)} errors)]
+       [pairs (cons (missing-value (first def)) errors)]
 
        :else
-       (let [errors (concat errors (validate* def1 data1))
-             pairs  (conj pairs [def1 data1])]
-         (recur (rest def) (rest data) pairs errors))))))
+       (let [pairs  (conj pairs [def1 data1])
+             errors (->> (validate* def1 data1)
+                         (map #(add-key % index))
+                         (concat errors))]
+         (recur (rest def) (rest data) pairs errors (inc index)))))))
 
 (extend-type clojure.lang.IPersistentVector
   Validate

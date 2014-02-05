@@ -118,7 +118,19 @@
       (is (empty? (validate [(? String) Number] [10])))
       (is (not (empty? (validate [(? String) Number] []))))
       (is (not (empty? (validate [(? String) Number] ["foo"]))))
-      (is (not (empty? (validate [(? String) Number] ["foo" "bar" 3]))))))
+      (is (not (empty? (validate [(? String) Number] ["foo" "bar" 3])))))
+    (testing "indexes"
+      (is (= (validate [String] ["foo" "bar"])
+             [{:error :unexpected-value
+               :keys [1]
+               :message "found additional values in list not in definition"
+               :found "bar"}]))
+      (is (= (validate [String [Number String] String] ["a" ["b" "c"] "d"])
+             [{:error :invalid-type
+               :message "data type does not match definition"
+               :keys [1 0]
+               :expected Number
+               :found String}]))))
 
   (testing "maps"
     (testing "valid"
