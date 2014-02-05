@@ -33,6 +33,8 @@
   constraint.core.Constraint
   (postwalk* [c f] (postwalk* (constraint c) f))
   Object
+  (postwalk* [x f] (f x))
+  nil
   (postwalk* [x f] (f x)))
 
 (defn postwalk
