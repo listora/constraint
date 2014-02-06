@@ -143,9 +143,7 @@
   (validate* [definition data]
     (if (sequential? data)
       (second (walk-seq definition data))
-      [{:error    :invalid-type
-        :expected clojure.lang.Sequential
-        :found    (type data)}]))
+      [(invalid-type clojure.lang.Sequential (type data))]))
   WalkData
   (walk-data* [definition f data]
     (if (sequential? data)
@@ -183,9 +181,7 @@
   (validate* [definition data]
     (if (map? data)
       (second (walk-map definition data))
-      [{:error    :invalid-type
-        :expected clojure.lang.IPersistentMap
-        :found    (type data)}]))
+      [(invalid-type clojure.lang.IPersistentMap (type data))]))
   WalkData
   (walk-data* [definition f data]
     (if (map? data)
