@@ -1,4 +1,4 @@
-(defproject listora/constraint "0.0.1"
+(defproject listora/constraint "0.0.2"
   :description "Data constraint library"
   :url "https://github.com/listora/constraint"
   :license {:name "Eclipse Public License"

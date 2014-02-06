@@ -9,7 +9,7 @@ A Clojure library for describing, validating and coercing user input.
 #### Leiningen dependency
 
 ```clojure
-[listora/constraint "0.0.1"]
+[listora/constraint "0.0.2"]
 ```
 
 
