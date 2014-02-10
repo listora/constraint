@@ -1,17 +1,12 @@
 (ns constraint.coerce
   (:require [constraint.core :refer (U I & ? constraint)]
-            [constraint.validate :refer (Validate validate* walk-data)]
+            [constraint.validate :refer (Validate validate*)]
             [constraint.json-schema :refer (JsonSchema)]))
 
-(defprotocol Coerce
-  (coerce* [definition data]))
-
-(extend-protocol Coerce
-  Object
-  (coerce* [_ data] data))
-
 (defn coerce [definition data]
-  (walk-data coerce* definition data))
+  (let [results (validate* definition data)]
+    (assert (empty? (:errors results)))
+    (:value results)))
 
 (defprotocol Walk
   (postwalk* [form f]))
@@ -56,14 +51,17 @@
   function, which returns the coerced value."
   [[in-type out-type] & {:keys [validate coerce schema]}]
   (reify
-    Coerce
-    (coerce* [_ data] (coerce data))
     JsonSchema
     (json-schema* [_] schema)
     Validate
     (validate* [_ data]
-      (or (seq (validate* in-type data))
-          (if-not (validate data)
-            [{:error    :failed-coercion
-              :coercion out-type
-              :found    data}])))))
+      (let [results (validate* in-type data)]
+        (if (seq (:errors results))
+          results
+          (if (validate data)
+            {:value  (coerce data)
+             :errors #{}}
+            {:value  data
+             :errors #{{:error    :failed-coercion
+                        :coercion out-type
+                        :found    data}}}))))))

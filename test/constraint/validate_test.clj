@@ -141,7 +141,7 @@
       (is (= (validate {:foo String} {:foo "bar" :baz "quz"})
              [{:error :unexpected-keys
                :message "key(s) in data could not be matched to definition"
-               :found [:baz]}])))
+               :found #{:baz}}])))
     (testing "type"
       (is (= (validate {:foo String} [:foo "bar"])
              [{:error :invalid-type
