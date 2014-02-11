@@ -31,9 +31,13 @@
   [definition data]
   (empty? (validate definition data)))
 
+(defn consider [definition data]
+  (merge {:value data :errors #{}}
+         (validate* definition data)))
+
 (extend-type constraint.core.AnyType
   Validate
-  (validate* [_ data] {:value data :errors #{}}))
+  (validate* [_ data]))
 
 (extend-type constraint.core.Description
   Validate
@@ -42,11 +46,10 @@
 (extend-type constraint.core.Union
   Validate
   (validate* [definition data]
-    (let [results (map #(validate* % data) (.constraints definition))
+    (let [results (map #(consider % data) (.constraints definition))
           match   (first (filter (comp empty? :errors) results))]
       (or match
-          {:value data
-           :errors #{{:error    :no-valid-constraint
+          {:errors #{{:error    :no-valid-constraint
                       :failures (mapcat :error results)}}}))))
 
 (extend-type constraint.core.Intersection
@@ -54,7 +57,7 @@
   (validate* [definition data]
     (reduce
      (fn [{:keys [value errors]} definition]
-       (let [result (validate* definition value)]
+       (let [result (consider definition value)]
          {:value (:value result)
           :errors (into errors (:errors result))}))
      {:value data, :errors #{}}
@@ -65,13 +68,13 @@
   (validate* [definition data]
     (let [min (.min definition)
           max (.max definition)]
-      {:value  data
-       :errors (if-let [n (try (count data) (catch Throwable _ nil))]
-                 (if-not (<= min n max)
-                   #{{:error    :size-out-of-bounds
-                      :minimum  min
-                      :maximum  max
-                      :found    n}}))})))
+      {:errors
+       (if-let [n (try (count data) (catch Throwable _ nil))]
+         (if-not (<= min n max)
+           #{{:error    :size-out-of-bounds
+              :minimum  min
+              :maximum  max
+              :found    n}}))})))
 
 (defn- invalid-type [expected found]
   {:error    :invalid-type
@@ -81,9 +84,8 @@
 (extend-type Class
   Validate
   (validate* [definition data]
-    (if (instance? definition data)
-      {:value data, :errors #{}}
-      {:value data, :errors #{(invalid-type definition (type data))}})))
+    (if-not (instance? definition data)
+      {:errors #{(invalid-type definition (type data))}})))
 
 (defn- mandatory? [x]
   (not (or (many? x) (optional? x))))
@@ -113,13 +115,13 @@
                  errors)}
 
        (many? def1)
-       (let [{e :errors v :value} (validate* (constraint def1) data1)]
+       (let [{e :errors v :value} (consider (constraint def1) data1)]
          (if (empty? e)
            (recur def (rest data) (conj value v) errors)
            (recur (rest def) data value errors)))
 
        (optional? def1)
-       (let [{e :errors v :value} (validate* (constraint def1) data1)]
+       (let [{e :errors v :value} (consider (constraint def1) data1)]
          (if (empty? e)
            (recur (rest def) (rest data) (conj value v) errors)
            (recur (rest def) data value errors)))
@@ -129,7 +131,7 @@
         :errors (cons (missing-value def1) errors)}
 
        :else
-       (let [{e :errors v :value} (validate* def1 data1)
+       (let [{e :errors v :value} (consider def1 data1)
              errors (into errors (map #(add-key % index) e))]
          (recur (rest def) (rest data) (conj value v) errors))))))
 
@@ -138,34 +140,31 @@
   (validate* [definition data]
     (if (sequential? data)
       (validate-seq definition data)
-      {:value  data
-       :errors #{(invalid-type clojure.lang.Sequential (type data))}})))
+      {:errors #{(invalid-type clojure.lang.Sequential (type data))}})))
 
 (defn- validate-map [def data]
   (cond
    (and (empty? def) (not-empty data))
-   {:value   data
-    :errors #{{:error :unexpected-keys
+   {:errors #{{:error :unexpected-keys
                :found (set (keys data))}}}
 
    (and (empty? data) (some mandatory? (keys def)))
-   {:value  data
-    :errors #{{:error   :missing-keys
+   {:errors #{{:error   :missing-keys
                :missing (set (filter mandatory? (keys def)))}}}
 
    (not-empty data)
    (let [[dk dv] (first data)
          data    (dissoc data dk)
          matches (for [[k v] def
-                       :let  [{dk* :value, es :errors} (validate* (constraint k) dk)]
+                       :let  [{dk* :value, es :errors}
+                              (consider (constraint k) dk)]
                        :when (empty? es)]
                    [k v dk*])]
      (if (empty? matches)
-       {:value  data
-        :errors #{{:error :unexpected-keys, :found [dk]}}}
+       {:errors #{{:error :unexpected-keys, :found [dk]}}}
        (let [results (for [[k v dk*] matches]
                        (let [def (if (many? k) def (dissoc def k))
-                             {dv* :value, de :errors}      (validate* v dv)
+                             {dv* :value, de :errors}      (consider v dv)
                              {data :value, errors :errors} (validate-map def data)]
                          {:value  (assoc data dk* dv*)
                           :errors (->> (map #(add-key % dk) de)
@@ -178,27 +177,25 @@
   (validate* [definition data]
     (if (map? data)
       (validate-map definition data)
-      {:value  data
-       :errors #{(invalid-type clojure.lang.IPersistentMap (type data))}})))
+      {:errors #{(invalid-type clojure.lang.IPersistentMap (type data))}})))
 
 (extend-type java.util.regex.Pattern
   Validate
   (validate* [definition data]
-    {:value  data
-     :errors (cond
-              (not (string? data))
-              #{(invalid-type String (type data))}
-              (not (re-matches definition data))
-              #{{:error   :pattern-not-matching
+    (cond
+     (not (string? data))
+     {:errors #{(invalid-type String (type data))}}
+     (not (re-matches definition data))
+     {:errors #{{:error   :pattern-not-matching
                  :pattern definition
-                 :found   data}})}))
+                 :found   data}}})))
 
 (defn- validate-literal [definition data]
-  {:value  data
-   :errors (if-not (= definition data)
-             #{{:error     :invalid-value
-                 :expected definition
-                 :found    data}})})
+  (if-not (= definition data)
+    {:errors
+     #{{:error    :invalid-value
+        :expected definition
+        :found    data}}}))
 
 (extend-protocol Validate
   nil

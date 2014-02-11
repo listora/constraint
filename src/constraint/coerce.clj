@@ -1,10 +1,10 @@
 (ns constraint.coerce
   (:require [constraint.core :refer (U I & ? constraint)]
-            [constraint.validate :refer (Validate validate*)]
+            [constraint.validate :refer (Validate validate* consider)]
             [constraint.json-schema :refer (JsonSchema)]))
 
 (defn coerce [definition data]
-  (let [results (validate* definition data)]
+  (let [results (consider definition data)]
     (assert (empty? (:errors results)))
     (:value results)))
 
@@ -59,9 +59,7 @@
         (if (seq (:errors results))
           results
           (if (validate data)
-            {:value  (coerce data)
-             :errors #{}}
-            {:value  data
-             :errors #{{:error    :failed-coercion
+            {:value  (coerce data)}
+            {:errors #{{:error    :failed-coercion
                         :coercion out-type
                         :found    data}}}))))))
