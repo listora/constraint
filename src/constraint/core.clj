@@ -1,5 +1,5 @@
 (ns constraint.core
-  "Core constraint types.")
+  "Define, validate and coerce constraints definitions.")
 
 (deftype AnyType [])
 
@@ -72,3 +72,223 @@
   the bounds specified."
   ([max] (SizeBounds. 0 max))
   ([min max] (SizeBounds. min max)))
+
+(defprotocol Transform
+  (transform* [definition data]))
+
+(defn transform
+  "Transform a data structure according to a definition. Returns a map with the
+  keys :value, containing the transformed data, and :errors, containing a set
+  of validation errors."
+  [definition data]
+  (merge {:value data :errors #{}} (transform* definition data)))
+
+(def default-messages
+  {:invalid-type "data type does not match definition"
+   :invalid-value "data value does not match definition"
+   :no-valid-constraint "no valid constraint in union"
+   :size-out-of-bounds "data size is out of bounds"
+   :pattern-not-matching "data does not match regular expression in definition"
+   :failed-coercion "could not coerce data to expected format"
+   :unexpected-keys "key(s) in data could not be matched to definition"
+   :missing-keys "mandatory key(s) in definition could not be found in data"
+   :unexpected-value "found additional values in list not in definition"
+   :missing-value "unexpected end of list"})
+
+(defn validate
+  "Validate a data structure against a definition. Returns a set of validation
+  errors. The data is valid if the set is empty."
+  [definition data]
+  (for [error (:errors (transform definition data))]
+    (assoc error :message (default-messages (:error error)))))
+
+(defn valid?
+  "Validate a data structure against a definition. Returns true if the data is
+  valid, false otherwise."
+  [definition data]
+  (empty? (validate definition data)))
+
+(defn coerce
+  "Transform a data structure according to a definition. Throws an exception if
+  the data is not valid."
+  [definition data]
+  (let [{:keys [value errors]} (transform definition data)]
+    (assert (empty? errors))
+    value))
+
+(defn- no-valid-constraint [results]
+  {:error    :no-valid-constraint
+   :failures (mapcat :error results)})
+
+(defn- invalid-type [expected found]
+  {:error    :invalid-type
+   :expected expected
+   :found    found})
+
+(defn- invalid-value [expected found]
+  {:error    :invalid-value
+   :expected expected
+   :found    found})
+
+(defn- unexpected-value [index value]
+  {:keys  (list index)
+   :error :unexpected-value
+   :found value})
+
+(defn- missing-value [missing]
+  {:error   :missing-value
+   :missing missing})
+
+(defn- unexpected-keys [keys]
+  {:error :unexpected-keys
+   :found (set keys)})
+
+(defn- missing-keys [keys]
+  {:error   :missing-keys
+   :missing (set keys)})
+
+(extend-protocol Transform
+  AnyType
+  (transform* [_ data])
+  
+  Description
+  (transform* [definition data] (transform* (.constraint definition) data))
+  
+  Union
+  (transform* [definition data]
+    (let [results (map #(transform % data) (.constraints definition))
+          match   (first (filter (comp empty? :errors) results))]
+      (or match
+          {:errors #{(no-valid-constraint results)}})))
+  
+  Intersection
+  (transform* [definition data]
+    (reduce
+     (fn [{:keys [value errors]} definition]
+       (let [result (transform definition value)]
+         {:value (:value result)
+          :errors (into errors (:errors result))}))
+     {:value data, :errors #{}}
+     (.constraints definition)))
+  
+  SizeBounds
+  (transform* [definition data]
+    (let [min (.min definition)
+          max (.max definition)]
+      {:errors
+       (if-let [n (try (count data) (catch Throwable _ nil))]
+         (if-not (<= min n max)
+           #{{:error    :size-out-of-bounds
+              :minimum  min
+              :maximum  max
+              :found    n}}))}))
+
+  Class
+  (transform* [definition data]
+    (if-not (instance? definition data)
+      {:errors #{(invalid-type definition (type data))}}))
+
+  java.util.regex.Pattern
+  (transform* [definition data]
+    (cond
+     (not (string? data))
+     {:errors #{(invalid-type String (type data))}}
+     (not (re-matches definition data))
+     {:errors #{{:error   :pattern-not-matching
+                 :pattern definition
+                 :found   data}}}))
+
+  Object
+  (transform* [definition data]
+    (if-not (= definition data)
+      {:errors #{(invalid-value definition data)}}))
+
+  nil
+  (transform* [definition data]
+    (if-not (= definition data)
+      {:errors #{(invalid-value definition data)}})))
+
+(defn- mandatory? [x]
+  (not (or (many? x) (optional? x))))
+
+(defn- add-key [error key]
+  (update-in error [:keys] conj key))
+
+(defn- transform-seq [def data]
+  (loop [def def, data data, value [] errors #{}]
+    (let [def1  (first def)
+          data1 (first data)
+          index (count value)]
+      (cond
+       (empty? def)
+       {:value  (into value data)
+        :errors (if (seq data)
+                 (conj errors (unexpected-value index data1))
+                 errors)}
+
+       (many? def1)
+       (let [{e :errors v :value} (transform (.constraint def1) data1)]
+         (if (empty? e)
+           (recur def (rest data) (conj value v) errors)
+           (recur (rest def) data value errors)))
+
+       (optional? def1)
+       (let [{e :errors v :value} (transform (.constraint def1) data1)]
+         (if (empty? e)
+           (recur (rest def) (rest data) (conj value v) errors)
+           (recur (rest def) data value errors)))
+
+       (empty? data)
+       {:value  value
+        :errors (cons (missing-value def1) errors)}
+
+       :else
+       (let [{e :errors v :value} (transform def1 data1)
+             errors (into errors (map #(add-key % index) e))]
+         (recur (rest def) (rest data) (conj value v) errors))))))
+
+(extend-type clojure.lang.IPersistentVector
+  Transform
+  (transform* [definition data]
+    (if (sequential? data)
+      (transform-seq definition data)
+      {:errors #{(invalid-type clojure.lang.Sequential (type data))}})))
+
+(defn- transform-key [def data]
+  (if (mandatory? def)
+    (transform def data)
+    (transform (.constraint def) data)))
+
+(defn- transform-map [def data]
+  (cond
+   (and (empty? def) (not-empty data))
+   {:errors #{(unexpected-keys (keys data))}}
+
+   (and (empty? data) (some mandatory? (keys def)))
+   {:errors #{(missing-keys (filter mandatory? (keys def)))}}
+
+   (not-empty data)
+   (let [[dk dv] (first data)
+         data    (dissoc data dk)
+         matches (for [[k v] def
+                       :let  [{dk* :value, es :errors} (transform-key k dk)]
+                       :when (empty? es)]
+                   [k v dk*])]
+     (if (empty? matches)
+       {:errors #{{:error :unexpected-keys, :found [dk]}}}
+       (let [results (for [[k v dk*] matches]
+                       (let [def (if (many? k) def (dissoc def k))
+                             {dv* :value, de :errors}      (transform v dv)
+                             {data :value, errors :errors} (transform-map def data)]
+                         {:value  (assoc data dk* dv*)
+                          :errors (->> (map #(add-key % dk) de)
+                                       (concat errors)
+                                       (set))}))]
+         (first (sort-by (comp count :errors) results)))))))
+
+(extend-type clojure.lang.IPersistentMap
+  Transform
+  (transform* [definition data]
+    (if (map? data)
+      (transform-map definition data)
+      {:errors #{(invalid-type clojure.lang.IPersistentMap (type data))}})))
