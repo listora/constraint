@@ -1,5 +1,5 @@
 (ns constraint.coerce
-  (:require [constraint.core :refer (U I & ? constraint)]
+  (:require [constraint.core :refer (U I & ?)]
             [constraint.validate :refer (Validate validate* consider)]
             [constraint.json-schema :refer (JsonSchema)]))
 
@@ -17,16 +17,16 @@
   constraint.core.Intersection
   (postwalk* [i f] (apply I (map #(postwalk* % f) (.constraints i))))
   constraint.core.Many
-  (postwalk* [m f] (& (postwalk* (constraint m) f)))
+  (postwalk* [m f] (& (postwalk* (.constraint m) f)))
   constraint.core.Optional
-  (postwalk* [o f] (? (postwalk* (constraint o) f)))
+  (postwalk* [o f] (? (postwalk* (.constraint o) f)))
+  constraint.core.Description
+  (postwalk* [c f] (postwalk* (.constraint c) f))
   clojure.lang.IPersistentVector
   (postwalk* [v f] (f (mapv #(postwalk* % f) v)))
   clojure.lang.IPersistentMap
   (postwalk* [m f]
     (f (into {} (for [[k v] m] (f [(postwalk* k f) (postwalk* v f)])))))
-  constraint.core.Constraint
-  (postwalk* [c f] (postwalk* (constraint c) f))
   Object
   (postwalk* [x f] (f x))
   nil

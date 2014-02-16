@@ -1,30 +1,21 @@
 (ns constraint.core
   "Core constraint types.")
 
-(defprotocol Constraint
-  (constraint [x] "Return the constraint in the value x."))
-
-(extend-protocol Constraint
-  Object
-  (constraint [x] x))
-
-(defmethod print-method constraint.core.Constraint [c ^java.io.Writer w]
-  (.write w (pr-str (constraint c))))
-
 (deftype AnyType [])
 
 (def Any
   "A constraint that matches any data."
   (AnyType.))
 
-(deftype Description [inner doc]
-  Constraint
-  (constraint [x] inner))
+(deftype Description [constraint doc])
 
 (defn desc
   "Add a description to a constraint."
   [constraint doc-string]
   (Description. constraint doc-string))
+
+(defmethod print-method Description [^Description desc ^java.io.Writer w]
+  (.write w (pr-str (.constraint desc))))
 
 (deftype Union [constraints])
 
@@ -48,9 +39,7 @@
 (defn intersection? [x]
   (instance? constraint.core.Intersection x))
 
-(deftype Optional [inner]
-  Constraint
-  (constraint [x] inner))
+(deftype Optional [constraint])
 
 (defn ?
   "Denote the inner constraint as optional when embedded in a collection."
@@ -63,9 +52,7 @@
 (defn optional? [x]
   (instance? constraint.core.Optional x))
 
-(deftype Many [inner]
-  Constraint
-  (constraint [x] inner))
+(deftype Many [constraint])
 
 (defn &
   "Denote the inner constraint as matching zero or more items in a collection."

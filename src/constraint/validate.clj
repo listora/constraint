@@ -1,6 +1,6 @@
 (ns constraint.validate
   "Validate a data structure against a constraint."
-  (:require [constraint.core :refer (many? optional? constraint)]))
+  (:require [constraint.core :refer (many? optional?)]))
 
 (defprotocol Validate
   (validate* [definition data]))
@@ -41,7 +41,7 @@
 
 (extend-type constraint.core.Description
   Validate
-  (validate* [definition data] (validate* (constraint definition) data)))
+  (validate* [definition data] (validate* (.constraint definition) data)))
 
 (extend-type constraint.core.Union
   Validate
@@ -115,13 +115,13 @@
                  errors)}
 
        (many? def1)
-       (let [{e :errors v :value} (consider (constraint def1) data1)]
+       (let [{e :errors v :value} (consider (.constraint def1) data1)]
          (if (empty? e)
            (recur def (rest data) (conj value v) errors)
            (recur (rest def) data value errors)))
 
        (optional? def1)
-       (let [{e :errors v :value} (consider (constraint def1) data1)]
+       (let [{e :errors v :value} (consider (.constraint def1) data1)]
          (if (empty? e)
            (recur (rest def) (rest data) (conj value v) errors)
            (recur (rest def) data value errors)))
@@ -142,6 +142,11 @@
       (validate-seq definition data)
       {:errors #{(invalid-type clojure.lang.Sequential (type data))}})))
 
+(defn- consider-key [def data]
+  (if (mandatory? def)
+    (consider def data)
+    (consider (.constraint def) data)))
+
 (defn- validate-map [def data]
   (cond
    (and (empty? def) (not-empty data))
@@ -156,8 +161,7 @@
    (let [[dk dv] (first data)
          data    (dissoc data dk)
          matches (for [[k v] def
-                       :let  [{dk* :value, es :errors}
-                              (consider (constraint k) dk)]
+                       :let  [{dk* :value, es :errors} (consider-key k dk)]
                        :when (empty? es)]
                    [k v dk*])]
      (if (empty? matches)
