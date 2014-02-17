@@ -65,14 +65,6 @@
 (defn many? [x]
   (instance? constraint.core.Many x))
 
-(deftype SizeBounds [min max])
-
-(defn size
-  "Create a size constraint. The constraint is valid if (count data) is within
-  the bounds specified."
-  ([max] (SizeBounds. 0 max))
-  ([min max] (SizeBounds. min max)))
-
 (defprotocol Transform
   (transform* [definition data]))
 
@@ -87,13 +79,14 @@
   {:invalid-type "data type does not match definition"
    :invalid-value "data value does not match definition"
    :no-valid-constraint "no valid constraint in union"
-   :size-out-of-bounds "data size is out of bounds"
    :pattern-not-matching "data does not match regular expression in definition"
    :failed-coercion "could not coerce data to expected format"
    :unexpected-keys "key(s) in data could not be matched to definition"
    :missing-keys "mandatory key(s) in definition could not be found in data"
    :unexpected-value "found additional values in list not in definition"
-   :missing-value "unexpected end of list"})
+   :missing-value "unexpected end of list"
+   :size-too-small "size of data below minimum definition"
+   :size-too-large "size of data exceeds maximum definition"})
 
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
@@ -170,18 +163,6 @@
           :errors (into errors (:errors result))}))
      {:value data, :errors #{}}
      (.constraints definition)))
-  
-  SizeBounds
-  (transform* [definition data]
-    (let [min (.min definition)
-          max (.max definition)]
-      {:errors
-       (if-let [n (try (count data) (catch Throwable _ nil))]
-         (if-not (<= min n max)
-           #{{:error    :size-out-of-bounds
-              :minimum  min
-              :maximum  max
-              :found    n}}))}))
 
   Class
   (transform* [definition data]
