@@ -1,6 +1,7 @@
 (ns constraint.json-schema-test
   (:require [clojure.test :refer :all]
             [constraint.core :refer :all]
+            [constraint.validations :refer :all]
             [constraint.json-schema :refer :all]))
 
 (deftest test-json-schema
@@ -74,11 +75,11 @@
     (is (= (json-schema* (U 1 2 3))    {"enum" [1 2 3]})))
 
   (testing "size bounds"
-    (is (= (json-schema* (I String (size 5)))
+    (is (= (json-schema* (I String (max-size 5)))
            {"type" "string", "maxLength" 5}))
-    (is (= (json-schema* (I String (size 1 5)))
-           {"type" "string", "minLength" 1, "maxLength" 5}))
-    (is (= (json-schema* (I [(& Any)] (size 3)))
+    (is (= (json-schema* (I String (min-size 1)))
+           {"type" "string", "minLength" 1}))
+    (is (= (json-schema* (I [(& Any)] (max-size 3)))
            {"type" "array", "items" {}, "maxItems" 3}))
-    (is (= (json-schema* (I [(& Any)] (size 1 3)))
-           {"type" "array", "items" {}, "minItems" 1, "maxItems" 3}))))
+    (is (= (json-schema* (I [(& Any)] (min-size 1)))
+           {"type" "array", "items" {}, "minItems" 1}))))

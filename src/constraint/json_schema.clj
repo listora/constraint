@@ -1,5 +1,6 @@
 (ns constraint.json-schema
-  (:require [constraint.core :refer (many? optional?)]))
+  (:require [constraint.core :refer (many? optional?)]
+            [constraint.validations]))
 
 (defprotocol JsonSchema
   (json-schema* [definition]))
@@ -68,13 +69,12 @@
         {"allOf" (vec schemas)}
         (first schemas)))))
 
-(extend-type constraint.core.SizeBounds
-  JsonSchema
-  (json-schema* [definition]
-    (let [min (.min definition)
-          max (.max definition)]
-      (merge {"maxItems" max}
-             (if (zero? min) {} {"minItems" min})))))
+(extend-protocol JsonSchema
+  constraint.validations.MinSize
+  (json-schema* [definition] {"minItems" (.min definition)})
+
+  constraint.validations.MaxSize
+  (json-schema* [definition] {"maxItems" (.max definition)}))
 
 (extend-type Class
   JsonSchema
