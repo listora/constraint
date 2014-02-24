@@ -80,7 +80,7 @@
   of validation errors. Takes an optional map of coercions that maps a pair of
   types to a coercion function."
   [definition data & [{:as coercions}]]
-  (binding [*coercions* coercions]
+  (binding [*coercions* (merge *coercions* coercions)]
     (merge {:value data :errors #{}} (transform* definition data))))
 
 (def default-messages
@@ -108,7 +108,7 @@
   "Validate a data structure against a definition. Returns true if the data is
   valid, false otherwise. Takes an optional map of coercions."
   [definition data & [{:as coercions}]]
-  (empty? (validate definition data)))
+  (empty? (validate definition data coercions)))
 
 (defn coerce
   "Transform a data structure according to a definition. Throws an exception if

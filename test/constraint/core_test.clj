@@ -176,3 +176,15 @@
 (deftest test-valid?
   (is (true? (valid? String "foo")))
   (is (false? (valid? String 10))))
+
+(deftest test-coercions
+  (let [coercions {[String Long] (fn [x] {:value (Long/parseLong x)})}]
+    (testing "valid?"
+      (is (valid? Long "123" coercions))
+      (is (valid? [Long] ["123"] coercions))
+      (is (valid? {:foo Long} {:foo "123"} coercions)))
+
+    (testing "coerce"
+      (is (= (coerce Long "123" coercions) 123))
+      (is (= (coerce [Long] ["123"] coercions) [123]))
+      (is (= (coerce {:foo Long} {:foo "123"} coercions) {:foo 123})))))
