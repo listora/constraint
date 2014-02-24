@@ -72,14 +72,16 @@
 
 (defn- find-coercion [def data]
   (let [coercion-type [(type data) def]]
-    (val (first (filter #(isa? (key %) coercion-type) *coercions*)))))
+    (some->> *coercions* (filter #(isa? (key %) coercion-type)) first val)))
 
 (defn transform
   "Transform a data structure according to a definition. Returns a map with the
   keys :value, containing the transformed data, and :errors, containing a set
-  of validation errors."
-  [definition data]
-  (merge {:value data :errors #{}} (transform* definition data)))
+  of validation errors. Takes an optional map of coercions that maps a pair of
+  types to a coercion function."
+  [definition data & [{:as coercions}]]
+  (binding [*coercions* coercions]
+    (merge {:value data :errors #{}} (transform* definition data))))
 
 (def default-messages
   {:invalid-type "data type does not match definition"
@@ -96,22 +98,23 @@
 
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
-  errors. The data is valid if the set is empty."
-  [definition data]
-  (for [error (:errors (transform definition data))]
+  errors. The data is valid if the set is empty. Takes an optional map of
+  coercions (see transform)."
+  [definition data & [{:as coercions}]]
+  (for [error (:errors (transform definition data coercions))]
     (assoc error :message (default-messages (:error error)))))
 
 (defn valid?
   "Validate a data structure against a definition. Returns true if the data is
-  valid, false otherwise."
-  [definition data]
+  valid, false otherwise. Takes an optional map of coercions."
+  [definition data & [{:as coercions}]]
   (empty? (validate definition data)))
 
 (defn coerce
   "Transform a data structure according to a definition. Throws an exception if
-  the data is not valid."
-  [definition data]
-  (let [{:keys [value errors]} (transform definition data)]
+  the data is not valid. Takes an optional map of coercions."
+  [definition data & [{:as coercions}]]
+  (let [{:keys [value errors]} (transform definition data coercions)]
     (assert (empty? errors))
     value))
 
