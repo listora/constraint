@@ -68,6 +68,12 @@
 (defprotocol Transform
   (transform* [definition data]))
 
+(def ^:dynamic *coercions* {})
+
+(defn- find-coercion [def data]
+  (let [coercion-type [(type data) def]]
+    (val (first (filter #(isa? (key %) coercion-type) *coercions*)))))
+
 (defn transform
   "Transform a data structure according to a definition. Returns a map with the
   keys :value, containing the transformed data, and :errors, containing a set
@@ -166,8 +172,10 @@
 
   Class
   (transform* [definition data]
-    (if-not (instance? definition data)
-      {:errors #{(invalid-type definition (type data))}}))
+    (if-let [coercion (find-coercion definition data)]
+      (coercion data)
+      (if-not (instance? definition data)
+        {:errors #{(invalid-type definition (type data))}})))
 
   java.util.regex.Pattern
   (transform* [definition data]
