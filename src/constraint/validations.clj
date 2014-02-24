@@ -1,9 +1,6 @@
 (ns constraint.validations
   (:require [constraint.core :refer [Transform]]))
 
-(defn- validation [f]
-  (reify Transform (transform* [_ data] {:errors (f data)})))
-
 (defn- try-count [x]
   (try (count x) (catch Throwable _ nil)))
 
@@ -17,22 +14,28 @@
    :maximum maximum
    :found   found})
 
+(deftype MinSize [min]
+  Transform
+  (transform* [_ data]
+    (if-let [n (try-count data)]
+      (if (< n min)
+        {:errors #{(size-too-small min n)}}))))
+
+(deftype MaxSize [max]
+  Transform
+  (transform* [_ data]
+    (if-let [n (try-count data)]
+      (if (> n max)
+        {:errors #{(size-too-large max n)}}))))
+
 (defn min-size
   "Create a minimum size constraint. The constraint is valid if (count data) is
   equal or over the supplied minimum."
   [min]
-  (validation
-   (fn [data]
-     (if-let [n (try-count data)]
-       (if (< n min)
-         #{(size-too-small min n)})))))
+  (MinSize. min))
 
 (defn max-size
   "Create a maximum size constraint. The constraint is valid if (count data) is
   equal or under the supplied maximum."
   [max]
-  (validation
-   (fn [data]
-     (if-let [n (try-count data)]
-       (if (> n max)
-         #{(size-too-large max n)})))))
+  (MaxSize. max))
