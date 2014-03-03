@@ -84,13 +84,18 @@
   (binding [*coercions* (merge *coercions* coercions)]
     (merge {:value data :errors #{}} (transform* definition data))))
 
+(defn- default-message [error]
+  (get-in i18n/default-messages [:en (:error error)]))
+
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
   errors. The data is valid if the set is empty. Takes an optional map of
   coercions (see transform)."
   [definition data & [{:as coercions}]]
   (for [error (:errors (transform definition data coercions))]
-    (assoc error :message (get-in i18n/default-messages [:en (:error error)]))))
+    (if (:message error)
+      error
+      (assoc error :message (default-message error)))))
 
 (defn valid?
   "Validate a data structure against a definition. Returns true if the data is

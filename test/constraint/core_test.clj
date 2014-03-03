@@ -188,3 +188,10 @@
       (is (= (coerce Long "123" coercions) 123))
       (is (= (coerce [Long] ["123"] coercions) [123]))
       (is (= (coerce {:foo Long} {:foo "123"} coercions) {:foo 123})))))
+
+(deftest test-custom-message
+  (let [t (reify Transform
+            (transform* [def data]
+              {:errors #{{:error :invalid-type, :message "custom message"}}}))]
+    (is (= (validate t 1)
+           [{:error :invalid-type, :message "custom message"}]))))
