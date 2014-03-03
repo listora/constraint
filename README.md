@@ -51,6 +51,11 @@ syntax. A full definition of the syntax can be found [in the wiki][3].
 [3]: https://github.com/listora/constraint/wiki/Syntax
 
 
+## Documentation
+
+* [Wiki](https://github.com/listora/constraint/wiki)
+
+
 ## Validation
 
 If you just want to know whether a constraint is valid or not, there
