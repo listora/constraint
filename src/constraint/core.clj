@@ -1,5 +1,6 @@
 (ns constraint.core
-  "Define, validate and coerce constraints definitions.")
+  "Define, validate and coerce constraints definitions."
+  (:require [constraint.i18n :as i18n]))
 
 (deftype AnyType [])
 
@@ -83,26 +84,13 @@
   (binding [*coercions* (merge *coercions* coercions)]
     (merge {:value data :errors #{}} (transform* definition data))))
 
-(def default-messages
-  {:invalid-type "data type does not match definition"
-   :invalid-value "data value does not match definition"
-   :no-valid-constraint "no valid constraint in union"
-   :pattern-not-matching "data does not match regular expression in definition"
-   :failed-coercion "could not coerce data to expected format"
-   :unexpected-keys "key(s) in data could not be matched to definition"
-   :missing-keys "mandatory key(s) in definition could not be found in data"
-   :unexpected-value "found additional values in list not in definition"
-   :missing-value "unexpected end of list"
-   :size-too-small "size of data below minimum definition"
-   :size-too-large "size of data exceeds maximum definition"})
-
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
   errors. The data is valid if the set is empty. Takes an optional map of
   coercions (see transform)."
   [definition data & [{:as coercions}]]
   (for [error (:errors (transform definition data coercions))]
-    (assoc error :message (default-messages (:error error)))))
+    (assoc error :message (get-in i18n/default-messages [:en (:error error)]))))
 
 (defn valid?
   "Validate a data structure against a definition. Returns true if the data is
