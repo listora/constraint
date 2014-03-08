@@ -12,4 +12,6 @@
     :unexpected-value "found additional values in list not in definition"
     :missing-value "unexpected end of list"
     :size-too-small "size of data below minimum definition"
-    :size-too-large "size of data exceeds maximum definition"}})
+    :size-too-large "size of data exceeds maximum definition"
+    :below-minimum "numerical data is below minimum definition"
+    :above-maximum "numerical data exceeds maximum definition"}})

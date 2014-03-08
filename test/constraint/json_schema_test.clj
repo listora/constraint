@@ -82,4 +82,14 @@
     (is (= (json-schema* (I [(& Any)] (max-size 3)))
            {"type" "array", "items" {}, "maxItems" 3}))
     (is (= (json-schema* (I [(& Any)] (min-size 1)))
-           {"type" "array", "items" {}, "minItems" 1}))))
+           {"type" "array", "items" {}, "minItems" 1})))
+
+  (testing "minimum and maximum"
+    (is (= (json-schema* (I Integer (minimum 0)))
+           {"type" "integer", "minimum" 0}))
+    (is (= (json-schema* (I Number (minimum 1.0)))
+           {"type" "number", "minimum" 1.0}))
+    (is (= (json-schema* (I Integer (maximum 3)))
+           {"type" "integer", "maximum" 3}))
+    (is (= (json-schema* (I Number (maximum 4.0)))
+           {"type" "number", "maximum" 4.0}))))

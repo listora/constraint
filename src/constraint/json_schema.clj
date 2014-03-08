@@ -70,6 +70,12 @@
         (first schemas)))))
 
 (extend-protocol JsonSchema
+  constraint.validations.Minimum
+  (json-schema* [definition] {"minimum" (.min definition)})
+
+  constraint.validations.Maximum
+  (json-schema* [definition] {"maximum" (.max definition)})
+  
   constraint.validations.MinSize
   (json-schema* [definition] {"minItems" (.min definition)})
 
