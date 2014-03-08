@@ -260,7 +260,7 @@
                        :when (empty? es)]
                    [k v dk*])]
      (if (empty? matches)
-       {:errors #{{:error :unexpected-keys, :found [dk]}}}
+       {:errors #{(unexpected-keys [dk])}}
        (let [results (for [[k v dk*] matches]
                        (let [def (if (many? k) def (dissoc def k))
                              {dv* :value, de :errors}      (transform v dv)
