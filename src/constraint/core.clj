@@ -75,6 +75,9 @@
   (let [coercion-type [(type data) def]]
     (some->> *coercions* (filter #(isa? (key %) coercion-type)) first val)))
 
+(defn- default-message [error]
+  (get-in i18n/default-messages [:en (:error error)]))
+
 (defn transform
   "Transform a data structure according to a definition. Returns a map with the
   keys :value, containing the transformed data, and :errors, containing a set
@@ -82,20 +85,21 @@
   types to a coercion function."
   [definition data & [{:as coercions}]]
   (binding [*coercions* (merge *coercions* coercions)]
-    (merge {:value data :errors #{}} (transform* definition data))))
-
-(defn- default-message [error]
-  (get-in i18n/default-messages [:en (:error error)]))
+    (let [result (transform* definition data)]
+      (update-in (merge {:value data :errors #{}} result)
+                 [:errors]
+                 (fn [errors]
+                   (for [error errors]
+                     (if (:message error)
+                       error
+                       (assoc error :message (default-message error)))))))))
 
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
   errors. The data is valid if the set is empty. Takes an optional map of
   coercions (see transform)."
   [definition data & [{:as coercions}]]
-  (for [error (:errors (transform definition data coercions))]
-    (if (:message error)
-      error
-      (assoc error :message (default-message error)))))
+  (:errors (transform definition data coercions)))
 
 (defn valid?
   "Validate a data structure against a definition. Returns true if the data is
