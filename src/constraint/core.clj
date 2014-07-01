@@ -78,11 +78,8 @@
 (defn- default-message [error]
   (get-in i18n/default-messages [:en (:error error)]))
 
-(defn- assoc-default-error-messages [errors]
-  (for [error errors]
-    (if (:message error)
-      error
-      (assoc error :message (default-message error)))))
+(defn- assoc-default-error-message [error]
+  (update-in error [:message] #(or % (default-message error))))
 
 (defn transform
   "Transform a data structure according to a definition. Returns a map with the
@@ -93,7 +90,7 @@
   (binding [*coercions* (merge *coercions* coercions)]
     (let [result (transform* definition data)]
       (-> (merge {:value data :errors #{}} result)
-          (update-in [:errors] assoc-default-error-messages)))))
+          (update-in [:errors] #(map assoc-default-error-message %))))))
 
 (defn validate
   "Validate a data structure against a definition. Returns a set of validation
