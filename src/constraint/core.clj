@@ -89,7 +89,8 @@
   [definition data & [{:as coercions}]]
   (binding [*coercions* (merge *coercions* coercions)]
     (let [result (transform* definition data)]
-      (-> (merge {:value data :errors #{}} result)
+      (-> {:value data :errors #{}}
+          (merge result)
           (update-in [:errors] #(map assoc-default-error-message %))))))
 
 (defn validate
