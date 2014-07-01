@@ -31,7 +31,7 @@
   (testing "descriptions"
     (is (empty? (validate (desc :x "something") :x)))
     (is (not (empty? (validate (desc :x "something") :y)))))
-  
+
   (testing "values"
     (testing "strings"
       (is (empty? (validate "foo" "foo")))
@@ -189,9 +189,25 @@
       (is (= (coerce [Long] ["123"] coercions) [123]))
       (is (= (coerce {:foo Long} {:foo "123"} coercions) {:foo 123})))))
 
+(deftest test-transforms
+  (let [coercions {[String Long] (fn [x] {:value (Long/parseLong x)})}
+        schema {:foo Long}]
+    (testing "valid"
+      (let [r (transform schema {:foo "123"} coercions)]
+        (is (= {:foo 123} (:value r)) "value is coerced")
+        (is (empty? (:errors r)) "errors is empty")))
+    (testing "invalid"
+      (let [value {:bar "123"}
+            transformed (transform schema value coercions)
+            validated   (validate schema value)]
+        (is (= value (:value transformed)) "value is preserved")
+        (is (= validated (:errors transformed))
+            "transform give same errors as validate")))))
+
 (deftest test-custom-message
   (let [t (reify Transform
             (transform* [def data]
               {:errors #{{:error :invalid-type, :message "custom message"}}}))]
-    (is (= (validate t 1)
-           [{:error :invalid-type, :message "custom message"}]))))
+    (is (= [{:error :invalid-type, :message "custom message"}]
+           (validate t 1)))))
+
