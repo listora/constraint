@@ -116,7 +116,7 @@
 
 (defn- no-valid-constraint [results]
   {:error    :no-valid-constraint
-   :failures (mapcat :error results)})
+   :failures (mapcat :errors results)})
 
 (defn- invalid-type [expected found]
   {:error    :invalid-type
