@@ -70,7 +70,18 @@
   (testing "unions"
     (is (empty? (validate (U String nil) "foo")))
     (is (empty? (validate (U String nil) nil)))
-    (is (not (empty? (validate (U String nil) 10)))))
+    (is (= (validate (U String nil) 10)
+           [{:message "no valid constraint in union",
+             :error :no-valid-constraint,
+             :failures
+             [{:message "data type does not match definition",
+               :error :invalid-type,
+               :expected java.lang.String,
+               :found java.lang.Long}
+              {:message "data value does not match definition",
+               :error :invalid-value,
+               :expected nil,
+               :found 10}]}])))
 
   (testing "intersections"
     (is (empty? (validate (I Number Long) 10)))
