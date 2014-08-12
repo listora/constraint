@@ -26,7 +26,8 @@
 (defn- merge-enums [schemas]
   (if (some enum? schemas)
     (concat (remove enum? schemas)
-            [{"enum" (->> schemas (filter enum?) (mapcat #(get % "enum")) set sort vec)}])
+            [{"enum" (->> schemas (filter enum?) (mapcat #(get % "enum"))
+                          set sort vec)}])
     schemas))
 
 (extend-type constraint.core.Union
@@ -75,7 +76,7 @@
 
   constraint.validations.Maximum
   (json-schema* [definition] {"maximum" (.max definition)})
-  
+
   constraint.validations.MinSize
   (json-schema* [definition] {"minItems" (.min definition)})
 
@@ -120,7 +121,8 @@
 
      :else
      {"type" "array"
-      "items" {"oneOf" (vec (set (map (comp json-schema* constraint) definition)))}})))
+      "items" {"oneOf" (vec (set (map (comp json-schema* constraint)
+                                      definition)))}})))
 
 (defn- map-key? [x]
   (let [x (constraint x)]
