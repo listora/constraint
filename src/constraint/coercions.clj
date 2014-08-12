@@ -20,7 +20,7 @@
 (defn string->date [s]
   (if (re-matches date-time-pattern s)
     {:value (.getTime (javax.xml.bind.DatatypeConverter/parseDateTime s))}
-    {:errors #{(failed-coercion java.util.Date s)}})) 
+    {:errors #{(failed-coercion java.util.Date s)}}))
 
 (def json-coercions
   "A set of standard type coercion rules for data parsed from JSON."

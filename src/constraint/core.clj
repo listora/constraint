@@ -148,17 +148,17 @@
 (extend-protocol Transform
   AnyType
   (transform* [_ data])
-  
+
   Description
   (transform* [definition data] (transform* (.constraint definition) data))
-  
+
   Union
   (transform* [definition data]
     (let [results (map #(transform % data) (.constraints definition))
           match   (first (filter (comp empty? :errors) results))]
       (or match
           {:errors #{(no-valid-constraint results)}})))
-  
+
   Intersection
   (transform* [definition data]
     (reduce
@@ -211,8 +211,8 @@
        (empty? def)
        {:value  (into value data)
         :errors (if (seq data)
-                 (conj errors (unexpected-value index data1))
-                 errors)}
+                  (conj errors (unexpected-value index data1))
+                  errors)}
 
        (many? def1)
        (let [{e :errors v :value} (transform (.constraint def1) data1)]
@@ -264,14 +264,15 @@
                    [k v dk*])]
      (if (empty? matches)
        {:errors #{(unexpected-keys [dk])}}
-       (let [results (for [[k v dk*] matches]
-                       (let [def (if (many? k) def (dissoc def k))
-                             {dv* :value, de :errors}      (transform v dv)
-                             {data :value, errors :errors} (transform-map def data)]
-                         {:value  (assoc data dk* dv*)
-                          :errors (->> (map #(add-key % dk) de)
-                                       (concat errors)
-                                       (set))}))]
+       (let [results
+             (for [[k v dk*] matches]
+               (let [def (if (many? k) def (dissoc def k))
+                     {dv* :value, de :errors}      (transform v dv)
+                     {data :value, errors :errors} (transform-map def data)]
+                 {:value  (assoc data dk* dv*)
+                  :errors (->> (map #(add-key % dk) de)
+                               (concat errors)
+                               (set))}))]
          (first (sort-by (comp count :errors) results)))))))
 
 (extend-type clojure.lang.IPersistentMap

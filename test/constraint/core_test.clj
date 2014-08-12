@@ -66,7 +66,7 @@
                :message "data type does not match definition"
                :expected String
                :found Long}]))))
-  
+
   (testing "unions"
     (is (empty? (validate (U String nil) "foo")))
     (is (empty? (validate (U String nil) nil)))
@@ -87,7 +87,7 @@
     (is (empty? (validate (I Number Long) 10)))
     (is (not (empty? (validate (I Number Long) 10.0))))
     (is (not (empty? (validate (I Number Long) "10")))))
-  
+
   (testing "vectors"
     (testing "valid"
       (is (empty? (validate [String Number] ["foo" 10]))))
@@ -174,8 +174,10 @@
       (is (empty? (validate {(& String) Number} {"foo" 1})))
       (is (empty? (validate {(& String) Number} {"foo" 1, "bar" 2})))
       (is (not (empty? (validate {(& String) Number} {"foo" 1, :bar 2}))))
-      (is (empty? (validate {"foo" String, (& String) Number} {"foo" "bar", "baz" 3})))
-      (is (not (empty? (validate {"foo" String, (& String) Number} {"foo" 4, "baz" 5})))))
+      (is (empty? (validate {"foo" String, (& String) Number}
+                            {"foo" "bar", "baz" 3})))
+      (is (not (empty? (validate {"foo" String, (& String) Number}
+                                 {"foo" 4, "baz" 5})))))
     (testing "error keys"
       (is (= (validate {:foo {:bar [String]}} {:foo {:bar [5]}})
              [{:error :invalid-type
@@ -221,4 +223,3 @@
               {:errors #{{:error :invalid-type, :message "custom message"}}}))]
     (is (= [{:error :invalid-type, :message "custom message"}]
            (validate t 1)))))
-
